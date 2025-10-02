@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import NextAuthSessionProvider from "@/providers/session-providers";
+import { ThemeProvider } from "@/components/providers/ThemeProviders";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,11 +21,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>
-        <NextAuthSessionProvider>
-          {children}
-        </NextAuthSessionProvider>
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${inter.className} bg-white text-gray-900`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          <NextAuthSessionProvider>
+            {children}
+          </NextAuthSessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

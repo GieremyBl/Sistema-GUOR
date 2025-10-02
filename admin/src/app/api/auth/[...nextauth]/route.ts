@@ -20,22 +20,7 @@ export const authOptions: NextAuthOptions = {
             id: "1",
             email: "admin@modasestilosguor.com",
             password: "admin123",
-            name: "Carlos Administrador",
-            role: "admin"
-          },
-          {
-            id: "2",
-            email: "cliente@empresa.com",
-            password: "cliente123",
-            name: "Cliente Demo",
-            role: "client"
-          },
-          {
-            id: "3",
-            email: "taller@externo.com",
-            password: "taller123",
-            name: "Taller Externo",
-            role: "external"
+            name: "Administrador GUOR"
           }
         ];
 
@@ -47,8 +32,7 @@ export const authOptions: NextAuthOptions = {
           return {
             id: user.id,
             email: user.email,
-            name: user.name,
-            role: user.role
+            name: user.name
           };
         }
 
@@ -57,30 +41,43 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as any).role;
+    async redirect({ url, baseUrl }) {
+      // Manejar redirecciones específicas
+      if (url.startsWith("/login")) {
+        return baseUrl + "/login";
       }
-      return token;
+      if (url === "/signout") {
+        return baseUrl + "/login";
+      }
+      // Para otras URLs, mantener el comportamiento por defecto
+      if (url.startsWith(baseUrl)) return url;
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      return baseUrl + "/dashboard";
     },
-    async session({ session, token }) {
-      if (session?.user) {
-        (session.user as any).role = token.role;
+      async session({ session, token }) {
+      if (token) {
+        session.user = {
+          ...session.user,
+          id: token.sub as string,
+        };
       }
       return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
     }
   },
   pages: {
-    signIn: "/login",
-    signOut: "/login",  
+    signIn: "/login", 
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);
-
 export { handler as GET, handler as POST };

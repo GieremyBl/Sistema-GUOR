@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
   LayoutDashboard, 
@@ -22,7 +23,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     title: "Dashboard",
-    href: "/",
+    href: "/dashboard",
     icon: LayoutDashboard,
   },
   {
@@ -47,7 +48,7 @@ const additionalModules: NavItem[] = [
     title: "Gestión de Clientes",
     href: "/users",
     icon: Users,
-  },
+  }
 ];
 
 export default function Sidebar() {
@@ -74,8 +75,7 @@ export default function Sidebar() {
             </svg>
           </div>
           <div>
-            <h2 className="font-bold text-gray-900">GestiónPro</h2>
-            <p className="text-xs text-gray-500">Panel Administrador</p>
+            <p className="text-sm text-gray-900 font-medium">Panel Administrador</p>
           </div>
         </div>
       </div>

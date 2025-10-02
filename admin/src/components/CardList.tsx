@@ -3,9 +3,57 @@ import { Card, CardContent, CardFooter, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 
 const popularProducts = [
+  {
+    id: 1,
+    name: "Camisa Casual",
+    price: "29.99",
+    images: {
+      main: "/products/1g.png"
+    }
+  },
+  {
+    id: 2,
+    name: "Pantalón Clásico",
+    price: "49.99",
+    images: {
+      main: "/products/2g.png"
+    }
+  },
+  {
+    id: 3,
+    name: "Vestido Elegante",
+    price: "79.99",
+    images: {
+      main: "/products/3b.png"
+    }
+  }
 ];
+
 const latestTransactions = [
-  
+  {
+    id: 1,
+    title: "Pedido #1234",
+    amount: 299.99,
+    status: "completed",
+    date: "2025-10-02",
+    image: "/products/4w.png"
+  },
+  {
+    id: 2,
+    title: "Pedido #1235",
+    amount: 199.99,
+    status: "pending",
+    date: "2025-10-02",
+    image: "/products/5o.png"
+  },
+  {
+    id: 3,
+    title: "Pedido #1236",
+    amount: 499.99,
+    status: "processing",
+    date: "2025-10-02",
+    image: "/products/6g.png"
+  }
 ];
 
 const CardList = ({ title }: { title: string }) => {
@@ -52,9 +100,9 @@ const CardList = ({ title }: { title: string }) => {
                   <CardTitle className="text-sm font-medium">
                     {item.title}
                   </CardTitle>
-                  <Badge variant="secondary">{item.badge}</Badge>
+                  <Badge variant="secondary">{item.status}</Badge>
                 </CardContent>
-                <CardFooter className="p-0">${item.count /1000}K</CardFooter>
+                <CardFooter className="p-0">${item.amount}</CardFooter>
               </Card>
             ))}
       </div>

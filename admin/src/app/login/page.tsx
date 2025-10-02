@@ -63,66 +63,66 @@ export default function LoginPage() {
           </p>
         </div>
 
-      {/* Login Card */}
-      <Card className="shadow-2xl border-0">
-        <CardHeader className="space-y-1 pb-6">
-          <CardTitle className="text-2xl font-bold">Iniciar Sesión</CardTitle>
-          <CardDescription>
-            Ingresa tus credenciales corporativas
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Corporativo</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="usuario@empresa.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11"
-              />
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full h-11 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                "Iniciando sesión..."
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Iniciar Sesión
-                </>
+        {/* Login Card */}
+        <Card className="shadow-2xl border-0">
+          <CardHeader className="space-y-1 pb-6">
+            <CardTitle className="text-2xl font-bold">Iniciar Sesión</CardTitle>
+            <CardDescription>
+              Ingresa tus credenciales corporativas
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
               )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Corporativo</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="usuario@empresa.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-11"
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full h-11 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  "Iniciando sesión..."
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Iniciar Sesión
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
