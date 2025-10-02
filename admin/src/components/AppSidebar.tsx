@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
   },
   {
     title: "Gestión de Cotizaciones",
-    href: "/cotizaciones",
+    href: "/prices",
     icon: FileText,
   },
 ];
@@ -35,17 +35,17 @@ const navItems: NavItem[] = [
 const additionalModules: NavItem[] = [
   {
     title: "Gestión de Pedidos",
-    href: "/pedidos",
+    href: "/orders",
     icon: ShoppingCart,
   },
   {
     title: "Inventario",
-    href: "/inventario",
+    href: "/inventory",
     icon: Package,
   },
   {
     title: "Gestión de Clientes",
-    href: "/clientes",
+    href: "/users",
     icon: Users,
   },
 ];
