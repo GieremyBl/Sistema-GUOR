@@ -164,7 +164,7 @@ export default function NuevaCotizacionForm({ open, onOpenChange }: NuevaCotizac
             <Alert className="mb-4 bg-blue-50 border-blue-200">
               <Info className="w-4 h-4 text-blue-600" />
               <AlertDescription className="text-sm text-blue-800">
-                Cada modelo debe tener un mínimo de 400 prendas para ser cotizado.
+                Cada modelo debe tener un mínimo de 40 prendas para ser cotizado.
                 Mínimo 400 prendas por modelo • Máximo 25 modelos
               </AlertDescription>
             </Alert>
