@@ -1,5 +1,5 @@
 export interface Usuario {
-  id: string;
+  id: bigint;
   email: string;
   nombre: string;
   apellido: string;
@@ -13,12 +13,11 @@ export interface Usuario {
 }
 
 export interface Producto {
-  id: string;
-  codigo: string;
+  id: bigint;
   nombre: string;
   descripcion: string;
   precio: number;
-  categoria_id: string;
+  categoria_id: bigint;
   stock: number;
   stock_minimo: number;
   imagen: string;
@@ -27,35 +26,22 @@ export interface Producto {
   updated_at: Date;
 }
 
-export interface ItemPedido {
-  id: string;
-  pedido_id: string;
-  variante_id: string;
-  cantidad: number;
-  precio_unitario: number;
-  subtotal: number;
-  created_at: Date;
-  updated_at: Date;
-}
-
-// Actualizar la interfaz Pedido para incluir los items
 export interface Pedido {
-  id: string;
-  numero_orden: string;
-  usuario_id: string;
+  id: bigint;
+  cliente_id: bigint;
+  cotizacion_id: bigint | null;
   estado: 'PENDIENTE' | 'EN_PROCESO' | 'TERMINADO' | 'ENTREGADO' | 'CANCELADO';
   fecha_pedido: Date;
   fecha_entrega: Date | null;
   total: number;
-  items: ItemPedido[]; // Agregar relación con items
   created_at: Date;
   updated_at: Date;
 }
 
 export interface DetallePedido {
-  id: string;
-  pedido_id: string;
-  producto_id: string;
+  id: bigint;
+  pedido_id: bigint;
+  producto_id: bigint;
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
@@ -64,8 +50,7 @@ export interface DetallePedido {
 }
 
 export interface Inventario {
-  id: string;
-  codigo: string;
+  id: bigint;
   nombre: string;
   tipo: string;
   unidad_medida: string;
@@ -77,9 +62,9 @@ export interface Inventario {
 }
 
 export interface Confeccion {
-  id: string;
-  pedido_id: string;
-  taller_id: string;
+  id: bigint;
+  pedido_id: bigint;
+  taller_id: bigint;
   estado: 'PENDIENTE' | 'EN_PROCESO' | 'TERMINADO';
   fecha_inicio: Date;
   fecha_fin: Date | null;
@@ -89,9 +74,9 @@ export interface Confeccion {
 }
 
 export interface Despacho {
-  id: string;
-  pedido_id: string;
-  usuario_id: string;
+  id: bigint;
+  pedido_id: bigint;
+  usuario_id: bigint;
   estado: 'PENDIENTE' | 'EN_RUTA' | 'ENTREGADO';
   fecha_despacho: Date;
   fecha_entrega: Date | null;
@@ -101,12 +86,12 @@ export interface Despacho {
 }
 
 export interface Taller {
-  id: string;
+  id: bigint;
   nombre: string;
-  direccion: string;
   telefono: string;
-  email: string;
+  direccion: string;
   estado: boolean;
+  email: string;
   created_at: Date;
   updated_at: Date;
 }

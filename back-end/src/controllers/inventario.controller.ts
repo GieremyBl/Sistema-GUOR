@@ -14,7 +14,6 @@ export const inventarioController = {
 
   async create(req: Request, res: Response) {
     const { 
-      codigo, 
       nombre, 
       tipo, 
       unidad_medida, 
@@ -26,7 +25,6 @@ export const inventarioController = {
     const { data, error } = await supabase
       .from('inventario')
       .insert([{
-        codigo,
         nombre,
         tipo,
         unidad_medida,
@@ -42,8 +40,7 @@ export const inventarioController = {
 
   async update(req: Request, res: Response) {
     const { id } = req.params;
-    const { 
-      codigo, 
+    const {
       nombre, 
       tipo, 
       unidad_medida, 
@@ -55,7 +52,6 @@ export const inventarioController = {
     const { data, error } = await supabase
       .from('inventario')
       .update({
-        codigo,
         nombre,
         tipo,
         unidad_medida,
