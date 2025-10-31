@@ -237,7 +237,6 @@ export default function RegisterPage() {
                     <SelectValue placeholder="Selecciona un rol" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cliente">Cliente</SelectItem>
                     <SelectItem value="administrador">Administrador</SelectItem>
                     <SelectItem value="recepcionista">Recepcionista</SelectItem>
                     <SelectItem value="cortador">Cortador</SelectItem>

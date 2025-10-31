@@ -237,15 +237,12 @@ enum EstadoCotizacion {
 }
 
 enum Rol {
-  ADMIN
-  USER
   administrador
   cortador
   diseñador
   recepcionista
   ayudante
   representante_taller
-  cliente
 }
 
 enum EstadoPedido {
