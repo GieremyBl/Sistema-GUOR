@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import NuevaCotizacionForm from "@/components/NewPricesForm";
+import NuevaCotizacionForm from "@/components/prices/NewPricesForm";
 
 interface Cotizacion {
   id: string;
