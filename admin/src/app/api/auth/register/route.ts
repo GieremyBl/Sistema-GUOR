@@ -63,13 +63,20 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ Usuario creado:", nuevoUsuario.email);
 
-    return NextResponse.json(
-      {
+    // 1. Extrae el usuario creado
+    const usuarioCreado = nuevoUsuario; 
+
+    // 2. Crea un nuevo objeto para la respuesta, convirtiendo el BigInt 'id' a string
+    const usuarioParaRespuesta = {
+        ...usuarioCreado, // Copia todas las demás propiedades
+        id: usuarioCreado.id.toString(), // Convierte el BigInt a string
+    };
+
+    // 3. Usa el nuevo objeto al retornar
+    return NextResponse.json({
         message: "Usuario registrado exitosamente",
-        usuario: nuevoUsuario
-      },
-      { status: 201 }
-    );
+        usuario: usuarioParaRespuesta 
+    }, { status: 201 }); 
 
   } catch (error: any) {
     console.error("💥 Error al registrar usuario:", error);
