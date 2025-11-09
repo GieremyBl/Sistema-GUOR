@@ -1,119 +1,87 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import type { NextAuthOptions } from "next-auth";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
-import { createClient } from "@supabase/supabase-js";
-
-const prisma = new PrismaClient();
+import NextAuth, { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { createClient } from '@supabase/supabase-js';
+import { Role } from '@/app/types/index';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_KEY!
 );
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email y contraseña son requeridos");
+          throw new Error('Credenciales inválidas');
         }
 
-        try {
-          // 1. Buscar usuario en tu base de datos
-          const usuario = await prisma.usuario.findUnique({
-            where: { email: credentials.email }
-          });
+        // Autenticar con Supabase
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: credentials.email,
+          password: credentials.password
+        });
 
-          if (!usuario) {
-            throw new Error("Credenciales inválidas");
-          }
-
-          // 2. Verificar contraseña
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password,
-            usuario.contraseña
-          );
-
-          if (!isPasswordValid) {
-            throw new Error("Credenciales inválidas");
-          }
-
-          // 3. Verificar que el usuario esté activo
-          if (!usuario.estado) {
-            throw new Error("Usuario inactivo");
-          }
-
-          // 4. Login en Supabase Auth (opcional pero recomendado)
-          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email: credentials.email,
-            password: credentials.password
-          });
-
-          // Si hay error en Supabase pero el usuario existe en BD, continuar
-          // (puede pasar si el usuario se creó directamente en BD)
-
-          return {
-            id: usuario.id.toString(),
-            email: usuario.email,
-            name: `${usuario.nombre} ${usuario.apellido}`,
-            rol: usuario.rol,
-            authId: usuario.authId,
-          };
-        } catch (error: any) {
-          console.error("Error en autorización:", error);
-          throw new Error(error.message || "Error al autenticar");
+        if (authError || !authData.user) {
+          throw new Error('Credenciales incorrectas');
         }
+
+        // Obtener información del usuario
+        const { data: userData, error: userError } = await supabase
+          .from('usuarios')
+          .select('id, email, nombre, apellido, rol, estado')
+          .eq('email', credentials.email)
+          .single();
+
+        if (userError || !userData) {
+          throw new Error('Usuario no encontrado');
+        }
+
+        if (!userData.estado) {
+          throw new Error('Usuario inactivo');
+        }
+
+        return {
+          id: userData.id.toString(),
+          email: userData.email,
+          name: `${userData.nombre} ${userData.apellido}`,
+          rol: userData.rol as Role
+        };
       }
     })
   ],
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      if (url.startsWith("/login")) {
-        return baseUrl + "/";
-      }
-      if (url === "/signout") {
-        return baseUrl + "/login";
-      }
-      if (url.startsWith(baseUrl)) return url;
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      return baseUrl + "/";
-    },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user = {
-          ...session.user,
-          id: token.id as string,
-          rol: token.rol as string,
-          authId: token.authId as string,
-        };
-      }
-      return session;
-    },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
         token.rol = user.rol;
-        token.authId = user.authId;
+        token.id = user.id;
       }
       return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.rol = token.rol as Role;
+        session.user.id = token.id as string;
+      }
+      return session;
     }
   },
   pages: {
-    signIn: "/login",
+    signIn: '/login',
+    error: '/error'
   },
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 días
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET
 };
 
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };

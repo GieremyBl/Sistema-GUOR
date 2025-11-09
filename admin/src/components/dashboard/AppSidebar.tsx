@@ -11,7 +11,7 @@ import {
   Users,
   ChevronRight
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/app/lib/utils";
 
 interface NavItem {
   title: string;
@@ -45,7 +45,7 @@ const additionalModules: NavItem[] = [
     icon: Package,
   },
   {
-    title: "Gestión de Clientes",
+    title: "Gestión de Usuarios",
     href: "/users",
     icon: Users,
   }
