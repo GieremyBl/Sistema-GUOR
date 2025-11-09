@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { confeccionesController } from '../controllers/confecciones.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.get('/', authMiddleware, confeccionesController.getAll);
-router.post('/', authMiddleware, confeccionesController.create);
-router.patch('/:id/estado', authMiddleware, confeccionesController.updateStatus);
+router.get('/', authenticate, confeccionesController.getAll);
+router.post('/', authenticate, confeccionesController.create);
+router.patch('/:id/estado', authenticate, confeccionesController.updateStatus);
 
 export default router;

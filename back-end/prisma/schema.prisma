@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Usuario {
+  id          BigInt    @id @default(autoincrement())
+  email       String    @unique
+  nombre      String
+  apellido    String
+  contraseña  String
+  telefono    String?
+  direccion   String?
+  estado      Boolean   @default(true)
+  rol         Rol
+  authId      String?   @unique @map("auth_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  pedidos      Pedido[]
+  despachos    Despacho[]
+  cotizacionesCreadas Cotizacion[] @relation("CotizacionCreador") // Relación renombrada
+
+  @@map("usuarios")
+}
+
+model Cliente {
+  id          BigInt   @id @default(autoincrement())
+  ruc         Decimal  @db.Decimal
+  razonSocial String?  @map("razon_social")
+  email       String   @unique  
+  contraseña  String   
+  telefono    BigInt?
+  direccion   String?
+  activo      Boolean  @default(true)
+  authId      String?  @unique @map("auth_id") @db.Uuid  
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  pedidos      Pedido[]      
+  cotizaciones Cotizacion[]  
+
+  @@map("clientes")
+}
+
+model Producto {
+  id            BigInt             @id @default(autoincrement())
+  nombre        String
+  descripcion   String?
+  precio        Float
+  categoriaId   BigInt             @map("categoria_id")
+  stock         Int                @default(0)
+  stockMinimo   Int                @default(10) @map("stock_minimo")
+  imagen        String?
+  estado        Boolean            @default(true)
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  categoria     Categoria          @relation(fields: [categoriaId], references: [id])
+  detalles      DetallePedido[]
+  variantes     VarianteProducto[]
+
+  @@map("productos")
+}
+
+model Categoria {
+  id          BigInt     @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  estado      Boolean    @default(true)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  productos   Producto[]
+
+  @@map("categorias")
+}
+
+model VarianteProducto {
+  id              BigInt           @id @default(autoincrement())
+  productoId      BigInt           @map("producto_id")
+  nombre          String
+  valor           String
+  stockAdicional  Int              @default(0) @map("stock_adicional")
+  precioAdicional Float            @default(0) @map("precio_adicional")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  producto        Producto         @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  itemsCotizacion ItemCotizacion[]
+
+  @@map("variantes_producto")
+}
+
+model Pedido {
+  id            BigInt          @id @default(autoincrement())
+  usuarioId     BigInt          @map("usuario_id")
+  clienteId     BigInt          @map("cliente_id")         
+  estado        EstadoPedido    @default(PENDIENTE)
+  fechaPedido   DateTime        @default(now()) @map("fecha_pedido")
+  fechaEntrega  DateTime?       @map("fecha_entrega")
+  total         Float
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  usuario       Usuario         @relation(fields: [usuarioId], references: [id])
+  detalles      DetallePedido[]
+  confecciones  Confeccion[]
+  despachos     Despacho[]
+  cliente       Cliente          @relation(fields: [clienteId], references: [id])
+
+  @@map("pedidos")
+}
+
+model DetallePedido {
+  id              BigInt   @id @default(autoincrement())
+  pedidoId        BigInt   @map("pedido_id")
+  productoId      BigInt   @map("producto_id")
+  cantidad        Int
+  precioUnitario  Float    @map("precio_unitario")
+  subtotal        Float
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  pedido   Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id])
+
+  @@map("detalles_pedido")
+}
+
+model Inventario {
+  id           BigInt   @id @default(autoincrement())
+  nombre       String
+  tipo         String
+  unidadMedida String   @map("unidad_medida")
+  stockActual  Int      @map("stock_actual")
+  stockMinimo  Int      @map("stock_minimo")
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("inventario")
+}
+
+model Confeccion {
+  id            BigInt            @id @default(autoincrement())
+  pedidoId      BigInt            @map("pedido_id")
+  tallerId      BigInt            @map("taller_id")
+  estado        EstadoConfeccion  @default(PENDIENTE)
+  fechaInicio   DateTime          @map("fecha_inicio")
+  fechaFin      DateTime?         @map("fecha_fin")
+  observaciones String?
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  taller Taller @relation(fields: [tallerId], references: [id])
+
+  @@map("confecciones")
+}
+
+model Despacho {
+  id               BigInt         @id @default(autoincrement())
+  pedidoId         BigInt         @map("pedido_id")
+  usuarioId        BigInt         @map("usuario_id")
+  estado           EstadoDespacho @default(PENDIENTE)
+  fechaDespacho    DateTime       @map("fecha_despacho")
+  fechaEntrega     DateTime?      @map("fecha_entrega")
+  direccionEntrega String         @map("direccion_entrega")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  pedido  Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@map("despachos")
+}
+
+model Taller {
+  id        BigInt   @id @default(autoincrement())
+  nombre    String
+  direccion String
+  telefono  String
+  email     String?  @unique
+  estado    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  confecciones Confeccion[]
+
+  @@map("talleres")
+}
+
+model Cotizacion {
+  id           BigInt            @id @default(autoincrement())
+  clienteId    BigInt            @map("cliente_id") // AGREGADO
+  usuarioId    BigInt            @map("usuario_id") // Usuario que la creó
+  estado       EstadoCotizacion  @default(PENDIENTE)
+  total        Float
+  fechaCotizac DateTime          @default(now()) @map("fecha_cotizac")
+  creadoPor    String?           @map("creado_por")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  cliente  Cliente          @relation(fields: [clienteId], references: [id]) // AGREGADO
+  usuario  Usuario          @relation("CotizacionCreador", fields: [usuarioId], references: [id])
+  items    ItemCotizacion[]
+
+  @@map("cotizaciones")
+}
+
+model ItemCotizacion {
+  id             BigInt   @id @default(autoincrement())
+  cotizacionId   BigInt   @map("cotizacion_id")
+  varianteId     BigInt   @map("variante_id")
+  cantidad       Int
+  precioUnitario Float    @map("precio_unitario")
+  subtotal       Float
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  cotizacion Cotizacion       @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  variante   VarianteProducto @relation(fields: [varianteId], references: [id])
+
+  @@map("items_cotizacion")
+}
+
+enum EstadoCotizacion {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  CERRADA
+}
+
+enum Rol {
+  administrador
+  cortador
+  diseñador
+  recepcionista
+  ayudante
+  representante_taller
+}
+
+enum EstadoPedido {
+  PENDIENTE
+  EN_PROCESO
+  TERMINADO
+  ENTREGADO
+  CANCELADO
+}
+
+enum EstadoConfeccion {
+  PENDIENTE
+  EN_PROCESO
+  TERMINADO
+}
+
+enum EstadoDespacho {
+  PENDIENTE
+  EN_RUTA
+  ENTREGADO
+}
