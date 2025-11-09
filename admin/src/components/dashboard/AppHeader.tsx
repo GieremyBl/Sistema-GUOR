@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { Calendar, ChevronDown, LogOut, Settings, User } from "lucide-react";
 import {
@@ -14,7 +15,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 export default function Header() {
-  const { data: session } = useSession();
+  const { data: session } = useSession();
+  const [isLoading, setIsLoading] = useState(false);
 
   const userName = session?.user?.name || "Usuario";
   const userRole = session?.user?.rol || "cliente";
@@ -84,13 +86,23 @@ export default function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-red-600 focus:text-red-600"
-              onClick={() => signOut({ 
-                callbackUrl: "/login",
-                redirect: true 
-              })}
+              onClick={async () => {
+                try {
+                  setIsLoading(true);
+                  await signOut({ 
+                    callbackUrl: "/login",
+                    redirect: true 
+                  });
+                } catch (error) {
+                  console.error("Error al cerrar sesión:", error);
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              disabled={isLoading}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Cerrar Sesión</span>
+              <span>{isLoading ? "Cerrando sesión..." : "Cerrar Sesión"}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
