@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { productosController } from '../controllers/productos.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
 router.get('/', productosController.getAll);
-router.post('/', authMiddleware, productosController.create);
-router.put('/:id', authMiddleware, productosController.updateStock);
-router.delete('/:id', authMiddleware, productosController.delete);
+router.post('/', authenticate, productosController.create);
+router.put('/:id', authenticate, productosController.updateStock);
+router.delete('/:id', authenticate, productosController.delete);
 
 export default router;

@@ -1,13 +1,8 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { createClient } from '@supabase/supabase-js';
 import { AuthenticatedRequestHandler } from '../types/handler.types';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabase } from '../config/supabase';
 
 export interface IAuthController {
   login(req: Request, res: Response): Promise<Response | void>;
