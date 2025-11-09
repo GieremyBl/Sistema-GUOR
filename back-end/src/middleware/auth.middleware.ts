@@ -1,75 +1,194 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../config/supabase';
-import { User } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
+import { Role, Permission } from '../types/roles';
+import { hasPermission } from '../config/permissions';
+import { AuthenticatedRequest } from '../types/auth.types';
 
-// Extender la interfaz Request
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User
-    }
-  }
-}
-
-export const authMiddleware = async (
-  req: Request, 
-  res: Response, 
+/**
+ * Middleware para autenticar el token JWT
+ * Agrega req.user con los datos del usuario
+ */
+export const authenticate = async (
+  req: Request,
+  res: Response,
   next: NextFunction
 ) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ 
-        error: 'No se proporcionó token de autenticación' 
-      });
-    }
-
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    // Obtener token del header
+    const authHeader = req.headers.authorization;
     
-    if (error || !user) {
-      return res.status(401).json({ 
-        error: 'Token inválido o expirado' 
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token no proporcionado',
       });
     }
-
-    req.user = user;
+    
+    const token = authHeader.split(' ')[1];
+    
+    // Verificar token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    
+    // Agregar usuario al request
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      rol: decoded.rol as Role,
+      nombre: decoded.nombre,
+      apellido: decoded.apellido,
+      estado: decoded.estado,
+      permissions: [], // Se inicializa vacío y se llenará con los permisos del rol
+    };
+    
+    // Verificar si el usuario está activo
+    if (!req.user.estado) {
+      return res.status(403).json({
+        success: false,
+        error: 'Usuario inactivo',
+      });
+    }
+    
     next();
-  } catch (error: any) {
-    return res.status(500).json({ 
-      error: 'Error en la autenticación' 
+  } catch (error) {
+    console.error('Error de autenticación:', error);
+    
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token expirado',
+      });
+    }
+    
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token inválido',
+      });
+    }
+    
+    return res.status(401).json({
+      success: false,
+      error: 'Error de autenticación',
     });
   }
 };
 
-export const adminMiddleware = async (
-  req: Request, 
-  res: Response, 
-  next: NextFunction
-) => {
-  try {
+/**
+ * Middleware para verificar un permiso específico
+ * Uso: requirePermission(Permission.VIEW_USERS)
+ */
+export const requirePermission = (permission: Permission) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({
-        error: 'Usuario no autenticado'
+        success: false,
+        error: 'No autenticado',
       });
     }
-
-    const { data: usuario, error } = await supabase
-      .from('usuarios')
-      .select('rol')
-      .eq('id', req.user.id)
-      .single();
-
-    if (error || usuario.rol !== 'ADMIN') {
-      return res.status(403).json({ 
-        error: 'Acceso no autorizado' 
+    
+    const hasAccess = hasPermission(req.user.rol, permission);
+    
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        error: 'No tienes permisos para esta acción',
+        details: {
+          required: permission,
+          role: req.user.rol,
+        },
       });
     }
-
+    
     next();
-  } catch (error: any) {
-    return res.status(500).json({ 
-      error: 'Error en la verificación de rol' 
+  };
+};
+
+/**
+ * Middleware para verificar múltiples permisos (cualquiera)
+ * Uso: requireAnyPermission([Permission.VIEW_USERS, Permission.MANAGE_USERS])
+ */
+export const requireAnyPermission = (permissions: Permission[]) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'No autenticado',
+      });
+    }
+    
+    const hasAccess = permissions.some(permission => 
+      hasPermission(req.user!.rol, permission)
+    );
+    
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        error: 'No tienes permisos para esta acción',
+        details: {
+          requiredAny: permissions,
+          role: req.user.rol,
+        },
+      });
+    }
+    
+    next();
+  };
+};
+
+/**
+ * Middleware para verificar roles específicos
+ * Uso: requireRole(Role.ADMINISTRADOR, Role.RECEPCIONISTA)
+ */
+export const requireRole = (...roles: Role[]) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'No autenticado',
+      });
+    }
+    
+    if (!roles.includes(req.user.rol)) {
+      return res.status(403).json({
+        success: false,
+        error: 'No tienes el rol requerido',
+        details: {
+          requiredRoles: roles,
+          yourRole: req.user.rol,
+        },
+      });
+    }
+    
+    next();
+  };
+};
+
+/**
+ * Middleware para verificar si es el propio usuario o admin
+ * Útil para endpoints como PUT /usuarios/:id
+ */
+export const requireOwnUserOrAdmin = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autenticado',
     });
   }
+  
+  const targetUserId = req.params.id;
+  const isOwnUser = req.user.id === targetUserId;
+  const isAdmin = req.user.rol === Role.ADMINISTRADOR;
+  
+  if (!isOwnUser && !isAdmin) {
+    return res.status(403).json({
+      success: false,
+      error: 'Solo puedes modificar tu propio perfil',
+    });
+  }
+  
+  next();
 };

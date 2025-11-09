@@ -14,8 +14,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 export default function Header() {
-  const { data: session } = useSession();
-  
+  const { data: session } = useSession();
+
+  const userName = session?.user?.name || "Usuario";
+  const userRole = session?.user?.rol || "cliente";
+  const displayRole = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+
   const userInitials = session?.user?.name
     ?.split(" ")
     .map((n) => n[0])
@@ -42,15 +46,15 @@ export default function Header() {
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                 <span className="text-sm font-medium text-gray-700">
-                  Administrador
+                  {displayRole}
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-sm font-semibold text-gray-900">
-                    Carlos Administrador
+                    {userName}
                   </p>
-                  <p className="text-xs text-gray-500">Administrador</p>
+                  <p className="text-xs text-gray-500">{displayRole}</p>
                 </div>
                 <Avatar className="w-9 h-9 bg-gradient-to-br from-orange-400 to-orange-600">
                   <AvatarFallback className="bg-transparent text-white font-semibold">
@@ -81,7 +85,7 @@ export default function Header() {
             <DropdownMenuItem
               className="text-red-600 focus:text-red-600"
               onClick={() => signOut({ 
-                callbackUrl: window.location.origin + "/login",
+                callbackUrl: "/login",
                 redirect: true 
               })}
             >
