@@ -5,7 +5,7 @@ import { Role } from '@/app/types/index';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export const authOptions: NextAuthOptions = {
@@ -21,7 +21,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Credenciales inválidas');
         }
 
-        // Autenticar con Supabase
+        // 1. Autenticar con Supabase
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: credentials.email,
           password: credentials.password
@@ -31,7 +31,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Credenciales incorrectas');
         }
 
-        // Obtener información del usuario
+        // 2. Obtener información del usuario
         const { data: userData, error: userError } = await supabase
           .from('usuarios')
           .select('id, email, nombre, apellido, rol, estado')
@@ -39,13 +39,15 @@ export const authOptions: NextAuthOptions = {
           .single();
 
         if (userError || !userData) {
+          // ¡ESTO NOS DIRÁ EL ERROR EXACTO!
+           console.error("Error al buscar en tabla 'usuarios':", userError?.message);
           throw new Error('Usuario no encontrado');
         }
-
+        // 3. Verificar estado del usuario
         if (!userData.estado) {
           throw new Error('Usuario inactivo');
         }
-
+        // 4. Éxito - retornar usuario
         return {
           id: userData.id.toString(),
           email: userData.email,

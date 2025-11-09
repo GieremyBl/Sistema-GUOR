@@ -65,10 +65,10 @@ export default function Header() {
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">
-                  {session?.user?.name || "Carlos Administrador"}
+                  {session?.user?.name }
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {session?.user?.email || "admin@modasestilosguor.com"}
+                  {session?.user?.email }
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -76,10 +76,6 @@ export default function Header() {
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
               <span>Perfil</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Configuración</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
