@@ -1,14 +1,36 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
+import NextAuth, { AuthOptions, DefaultSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { createClient } from '@supabase/supabase-js';
 import { Role } from '@/app/types/index';
+import { config } from '@/config/auth.config';
+
+// Extender el tipo Session de NextAuth
+declare module 'next-auth' {
+  interface Session extends DefaultSession {
+    user: {
+      id: string;
+      rol: Role;
+    } & DefaultSession['user']
+  }
+
+  interface User {
+    id: string;
+    rol: Role;
+  }
+}
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  config.supabase.url,
+  config.supabase.serviceKey
 );
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
+  secret: config.nextauth.secret,
+  pages: {
+    signIn: '/login',
+    signOut: '/login',
+    error: '/auth/error',
+  },
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -58,14 +80,14 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
         token.rol = user.rol;
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
         session.user.rol = token.rol as Role;
         session.user.id = token.id as string;
@@ -73,15 +95,9 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   },
-  pages: {
-    signIn: '/login',
-    error: '/error'
-  },
   session: {
-    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 días
-  },
-  secret: process.env.NEXTAUTH_SECRET
+  }
 };
 
 const handler = NextAuth(authOptions);
