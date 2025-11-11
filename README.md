@@ -1,71 +1,99 @@
-Sistema de Administración
-📋 Requisitos Previos
+# Sistema de Administración
 
-Node.js (versión 16 o superior)
-npm (incluido con Node.js)
-pnpm (se instalará en el proceso)
+## 📋 Requisitos Previos
 
-🚀 Instalación y Configuración
-Frontend (Admin)
+- Node.js (versión 16 o superior)
+- npm (incluido con Node.js)
+- pnpm (se instalará en el proceso)
 
-Navegar al directorio del frontend
+## 🚀 Instalación y Configuración
 
-bash   cd admin
+### Frontend (Admin)
 
-Instalar pnpm globalmente
+1. **Navegar al directorio del frontend**
+   ```bash
+   cd admin
+   ```
 
-bash   npm install -g pnpm
+2. **Instalar pnpm globalmente**
+   ```bash
+   npm install -g pnpm
+   ```
 
-Instalar dependencias
+3. **Instalar dependencias**
+   ```bash
+   pnpm install
+   ```
 
-bash   pnpm install
+4. **Generar Prisma Client**
+   ```bash
+   pnpm prisma generate
+   ```
 
-Generar Prisma Client
+5. **Ejecutar el sistema**
+   ```bash
+   pnpm run dev
+   ```
 
-bash   pnpm prisma generate
+### Backend
 
-Ejecutar el sistema
+1. **Navegar al directorio del backend**
+   ```bash
+   cd backend
+   ```
 
-bash   pnpm run dev
-Backend
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   ```
 
-Navegar al directorio del backend
+3. **Generar Prisma Client**
+   ```bash
+   npm run prisma generate
+   ```
 
-bash   cd backend
+4. **Ejecutar el servidor**
+   ```bash
+   npm run dev
+   ```
 
-Instalar dependencias
+## 🛠️ Comandos Útiles
 
-bash   npm install
+### Frontend (Admin)
+| Comando | Descripción |
+|---------|-------------|
+| `pnpm install` | Instala todas las dependencias |
+| `pnpm run dev` | Inicia el servidor de desarrollo |
+| `pnpm prisma generate` | Genera el cliente de Prisma |
+| `pnpm run build` | Compila el proyecto para producción |
 
-Generar Prisma Client
+### Backend
+| Comando | Descripción |
+|---------|-------------|
+| `npm install` | Instala todas las dependencias |
+| `npm run dev` | Inicia el servidor de desarrollo |
+| `npm run prisma generate` | Genera el cliente de Prisma |
+| `npm run build` | Compila el proyecto para producción |
 
-bash   npm run prisma generate
+## 📝 Notas
 
-Ejecutar el servidor
+- Asegúrate de tener configuradas las variables de entorno necesarias en ambos proyectos
+- El frontend y backend deben ejecutarse simultáneamente en terminales separadas
+- Verifica que los puertos requeridos estén disponibles antes de ejecutar
 
-bash   npm run dev
-🛠️ Comandos Útiles
-Frontend (Admin)
-ComandoDescripciónpnpm installInstala todas las dependenciaspnpm run devInicia el servidor de desarrollopnpm prisma generateGenera el cliente de Prismapnpm run buildCompila el proyecto para producción
-Backend
-ComandoDescripciónnpm installInstala todas las dependenciasnpm run devInicia el servidor de desarrollonpm run prisma generateGenera el cliente de Prismanpm run buildCompila el proyecto para producción
-📝 Notas
+## ⚠️ Solución de Problemas
 
-Asegúrate de tener configuradas las variables de entorno necesarias en ambos proyectos
-El frontend y backend deben ejecutarse simultáneamente en terminales separadas
-Verifica que los puertos requeridos estén disponibles antes de ejecutar
-
-⚠️ Solución de Problemas
 Si encuentras errores durante la instalación:
 
-Limpia el caché de npm/pnpm:
-
-bash   npm cache clean --force
+1. Limpia el caché de npm/pnpm:
+   ```bash
+   npm cache clean --force
    pnpm store prune
+   ```
 
-Elimina las carpetas node_modules y archivos de bloqueo:
+2. Elimina las carpetas `node_modules` y archivos de bloqueo:
+   ```bash
+   rm -rf node_modules pnpm-lock.yaml
+   ```
 
-bash   rm -rf node_modules pnpm-lock.yaml
-
-Reinstala las dependencias desde cero
-
+3. Reinstala las dependencias desde cero
