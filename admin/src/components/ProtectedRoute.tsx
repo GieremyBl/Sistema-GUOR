@@ -1,73 +1,37 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { usePermissions } from '@/app/hooks/usePermissions';
-import { Permission } from '@/app/types';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import type { Role } from "@/types/next-auth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredPermission?: Permission;
-  requiredPermissions?: Permission[];
-  requireAll?: boolean;
-  fallback?: React.ReactNode;
+  requiredRole?: Role;
   redirectTo?: string;
 }
 
-export function ProtectedRoute({
+export default function ProtectedRoute({
   children,
-  requiredPermission,
-  requiredPermissions,
-  requireAll = false,
-  fallback = (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Acceso Denegado</h2>
-        <p className="text-gray-600">No tienes permisos para acceder a esta página</p>
-      </div>
-    </div>
-  ),
-  redirectTo
+  requiredRole,
+  redirectTo = "/login",
 }: ProtectedRouteProps) {
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const { hasPermission, hasAnyPermission, hasAllPermissions, isLoading, isAuthenticated } = usePermissions();
-
-  const hasAccess = () => {
-    if (!isAuthenticated) return false;
-    
-    if (requiredPermission) {
-      return hasPermission(requiredPermission);
-    }
-    
-    if (requiredPermissions) {
-      return requireAll 
-        ? hasAllPermissions(requiredPermissions)
-        : hasAnyPermission(requiredPermissions);
-    }
-    
-    return true;
-  };
+  const hasAccess = session && (!requiredRole || (session.user?.rol as Role) === requiredRole);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/api/auth/login');
-    } else if (!isLoading && isAuthenticated && !hasAccess()) {
-      if (redirectTo) {
-        router.push(redirectTo);
-      }
+    if (status === "unauthenticated" || !hasAccess) {
+      router.push(redirectTo);
     }
-  }, [isLoading, isAuthenticated]);
+  }, [status, hasAccess, redirectTo, router]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-      </div>
-    );
+  if (status === "loading") {
+    return <div>Cargando...</div>;
   }
 
-  if (!isAuthenticated || !hasAccess()) {
-    return <>{fallback}</>;
+  if (!hasAccess) {
+    return null;
   }
 
   return <>{children}</>;

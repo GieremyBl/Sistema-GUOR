@@ -78,8 +78,9 @@ export default function RegisterPage() {
         router.push("/login");
       }, 2000);
 
-    } catch (err: any) {
-      setError(err.message || "Ocurrió un error al registrar el usuario");
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err.message : "Error en el registro. Intenta nuevamente.";
+      setError(error);
     } finally {
       setIsLoading(false);
     }

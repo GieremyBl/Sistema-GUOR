@@ -18,15 +18,8 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
-import { Input } from "../ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "../ui/button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const formSchema = z.object({
   fullName: z
@@ -39,7 +32,7 @@ const formSchema = z.object({
   city: z.string().min(2),
 });
 
-const AddUser = () => {
+export default function AddUser() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
@@ -137,6 +130,4 @@ const AddUser = () => {
       </SheetHeader>
     </SheetContent>
   );
-};
-
-export default AddUser;
+}

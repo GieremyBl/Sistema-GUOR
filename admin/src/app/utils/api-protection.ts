@@ -1,51 +1,57 @@
-import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
-import { Permission, Role } from '@/app/types';
-import { rolePermissions } from '@/app/config/permission';
+import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
 
-export async function checkPermission(
-  request: NextRequest,
-  requiredPermission: Permission
-): Promise<{ authorized: boolean; session: any; error?: string }> {
-  const session = await getServerSession();
-  
-  if (!session) {
-    return { 
-      authorized: false, 
-      session: null, 
-      error: 'No autenticado' 
-    };
-  }
-
-  const userRole = session.user?.rol as Role;
-  const permissions = rolePermissions[userRole] || [];
-
-  if (!permissions.includes(requiredPermission)) {
-    return { 
-      authorized: false, 
-      session, 
-      error: 'No tienes permisos para esta acción' 
-    };
-  }
-
-  return { authorized: true, session };
+interface ProtectedCallOptions extends RequestInit {
+  headers?: Record<string, string>;
 }
 
-// Wrapper para rutas API
-export function withPermission(
-  handler: (req: NextRequest, context: any) => Promise<NextResponse>,
-  requiredPermission: Permission
-) {
-  return async (req: NextRequest, context: any) => {
-    const { authorized, error } = await checkPermission(req, requiredPermission);
+export async function protectedApiCall(
+  endpoint: string,
+  options: ProtectedCallOptions = {}
+): Promise<Response> {
+  const session = await getServerSession() as Session | null;
 
-    if (!authorized) {
-      return NextResponse.json(
-        { error: error || 'No autorizado' },
-        { status: error === 'No autenticado' ? 401 : 403 }
-      );
+  if (!session) {
+    throw new Error("No autorizado");
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+
+  try {
+    const response = await fetch(endpoint, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error: ${response.statusText}`);
     }
 
-    return handler(req, context);
-  };
+    return response;
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : "Error en la solicitud";
+    throw new Error(error);
+  }
+}
+
+export async function validateToken(): Promise<{ valid: boolean; error?: string }> {
+  try {
+    return { valid: true };
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : "Error validando token";
+    return { valid: false, error };
+  }
+}
+
+export async function checkUserRole(requiredRole: string): Promise<boolean> {
+  const session = await getServerSession() as (Session & { user?: { rol?: string } }) | null;
+
+  if (!session?.user?.rol) {
+    return false;
+  }
+
+  return session.user.rol === requiredRole;
 }

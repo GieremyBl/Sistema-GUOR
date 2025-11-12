@@ -15,12 +15,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setSuccess(false);
 
     try {
       const result = await signIn("credentials", {
@@ -30,13 +30,13 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("Credenciales inválidas. Por favor, intenta de nuevo.");
+        setSuccess(false);
       } else if (result?.ok) {
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (error) {
-      setError("Ocurrió un error. Por favor, intenta de nuevo.");
+    } catch {
+      setSuccess(false);
     } finally {
       setIsLoading(false);
     }
@@ -74,10 +74,12 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              {error && (
+              {success === false && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
                   <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800">{error}</p>
+                  <p className="text-sm text-red-800">
+                    Credenciales inválidas. Por favor, intenta de nuevo.
+                  </p>
                 </div>
               )}
 

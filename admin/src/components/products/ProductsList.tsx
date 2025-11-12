@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Table,
@@ -27,30 +27,41 @@ interface Product {
 }
 
 export function ProductsList() {
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: '1',
-      codigo: 'PROD-001',
-      nombre: 'Laptop HP',
-      descripcion: 'Laptop HP 15.6" Intel Core i5',
-      precio: 599.99,
-      categoria: 'Electrónica',
-      stock: 15,
-      imagen: '/placeholder.jpg',
-      estado: true
-    },
-    {
-      id: '2',
-      codigo: 'PROD-002',
-      nombre: 'Mouse Logitech',
-      descripcion: 'Mouse inalámbrico',
-      precio: 25.99,
-      categoria: 'Accesorios',
-      stock: 0,
-      imagen: '/placeholder.jpg',
-      estado: false
-    }
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      // Simulación de datos de productos
+      const mockProducts = [
+        {
+          id: '1',
+          codigo: 'PROD-001',
+          nombre: 'Laptop HP',
+          descripcion: 'Laptop HP 15.6" Intel Core i5',
+          precio: 599.99,
+          categoria: 'Electrónica',
+          stock: 15,
+          imagen: '/placeholder.jpg',
+          estado: true
+        },
+        {
+          id: '2',
+          codigo: 'PROD-002',
+          nombre: 'Mouse Logitech',
+          descripcion: 'Mouse inalámbrico',
+          precio: 25.99,
+          categoria: 'Accesorios',
+          stock: 0,
+          imagen: '/placeholder.jpg',
+          estado: false
+        }
+      ];
+      setProducts(mockProducts);
+    };
+
+    fetchProducts();
+  }, []);
+
   const [search, setSearch] = useState('');
 
   const filteredProducts = products.filter(product =>
