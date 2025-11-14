@@ -14,13 +14,13 @@ model Usuario {
   nombreCompleto String 
   telefono    String?
   direccion   String?
-  estado      Boolean   @default(true)
+  estado      EstadoUsuario @default(ACTIVO)
   rol         Rol
   authId      String?   @unique @map("auth_id") @db.Uuid
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
-  ultimoAcceso DateTime 
-  createdBy
+  ultimoAcceso DateTime? 
+  createdBy    int?
   pedidos      Pedido[]
   despachos    Despacho[]
   cotizacionesCreadas Cotizacion[] @relation("CotizacionCreador") // Relación renombrada

@@ -47,8 +47,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
  matcher: [
-    // Solo protegemos las rutas de la APLICACIÓN.
-    // Dejamos que /api, /login, /register, etc., vivan libremente.
+  
   '/app/(dashboard)/:path*',
 ]
 };
