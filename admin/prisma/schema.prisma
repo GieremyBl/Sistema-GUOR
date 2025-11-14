@@ -8,12 +8,10 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model Usuario {
+model Usuario { 
   id          BigInt    @id @default(autoincrement())
   email       String    @unique
-  nombre      String
-  apellido    String
-  contraseña  String
+  nombreCompleto String 
   telefono    String?
   direccion   String?
   estado      Boolean   @default(true)
@@ -21,7 +19,8 @@ model Usuario {
   authId      String?   @unique @map("auth_id") @db.Uuid
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
-
+  ultimoAcceso DateTime 
+  createdBy
   pedidos      Pedido[]
   despachos    Despacho[]
   cotizacionesCreadas Cotizacion[] @relation("CotizacionCreador") // Relación renombrada

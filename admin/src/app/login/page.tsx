@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { supabase, getUsuarioCompleto } from "@/app/lib/supabase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { LogIn, AlertCircle, UserPlus } from "lucide-react";
+import { LogIn, AlertCircle, Mail } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,19 +22,53 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const result = await signIn("credentials", {
+      // 1. Login con Supabase Auth
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
-        redirect: false,
       });
 
-      if (result?.error) {
+      if (loginError) {
         setError("Credenciales inválidas. Por favor, intenta de nuevo.");
-      } else if (result?.ok) {
-        router.push("/dashboard");
-        router.refresh();
+        setIsLoading(false);
+        return;
       }
+
+      if (!data.user) {
+        setError("Error al iniciar sesión.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Obtener datos adicionales del usuario
+      const usuario = await getUsuarioCompleto();
+
+      if (!usuario) {
+        setError("Error obteniendo datos del usuario.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. Verificar que el usuario esté activo
+      if (usuario.estado !== 'ACTIVO') {
+        await supabase.auth.signOut();
+        setError("Tu cuenta está inactiva. Contacta al administrador.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 4. Actualizar último acceso
+      await supabase
+        .from('usuarios')
+        .update({ ultimo_acceso: new Date().toISOString() })
+        .eq('id', usuario.id);
+
+      // 5. Redirigir al dashboard
+      router.push("/dashboard");
+      router.refresh();
+
     } catch (error) {
+      console.error("Error en login:", error);
       setError("Ocurrió un error. Por favor, intenta de nuevo.");
     } finally {
       setIsLoading(false);
@@ -44,17 +77,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen relative bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50 flex flex-col items-center justify-center p-4">
-      {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
-        style={{
-          backgroundImage: "url('/costura.jpg')"
-        }}
+        style={{ backgroundImage: "url('/costura.jpg')" }}
       />
       
-      {/* Content */}
       <div className="relative z-10 w-full max-w-md">
-        {/* Title Section */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900">
             Modas y Estilos Guor
@@ -64,7 +92,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Login Card */}
         <Card className="shadow-2xl border-0">
           <CardHeader className="space-y-1 pb-6">
             <CardTitle className="text-2xl font-bold">Iniciar Sesión</CardTitle>
@@ -86,7 +113,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="usuario@empresa.com"
+                  placeholder="usuario@guor.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -97,15 +124,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Link 
-                    href="app/forgot-password" 
-                    className="text-sm text-rose-600 hover:text-rose-700 font-medium transition-colors hover:underline"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
+                <Label htmlFor="password">Contraseña</Label>
                 <Input
                   id="password"
                   type="password"
@@ -133,35 +152,29 @@ export default function LoginPage() {
                   </>
                 )}
               </Button>
+            </form>
 
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">
-                    ¿Nuevo en la plataforma?
-                  </span>
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Mail className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-blue-900">
+                      ¿No tienes acceso al sistema?
+                    </p>
+                    <p className="text-sm text-blue-700">
+                      Contacta al administrador del sistema para solicitar tus credenciales.
+                    </p>
+                    <p className="text-xs text-blue-600 mt-2">
+                      Email: admin@guor.com
+                    </p>
+                  </div>
                 </div>
               </div>
-
-              {/* Register Button */}
-              <Link href="/register" className="block">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  className="w-full h-11 border-2 border-rose-200 text-rose-700 hover:bg-rose-50 hover:border-rose-300 transition-all"
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Crear una cuenta nueva
-                </Button>
-              </Link>
-            </form>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <p className="text-center text-sm text-gray-600 mt-6">
           © 2025 Modas y Estilos Guor. Todos los derechos reservados.
         </p>
