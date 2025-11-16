@@ -1,6 +1,3 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -13,8 +10,6 @@ import pedidosRoutes from './routes/pedidos.routes';
 import confeccionesRoutes from './routes/confecciones.routes';
 import despachosRoutes from './routes/despachos.routes';
 import talleresRoutes from './routes/talleres.routes';
-
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -39,5 +34,5 @@ app.use('/api/despachos', despachosRoutes);
 app.use('/api/talleres', talleresRoutes);
 
 app.listen(port, () => {
-  console.log(`Servidor corriendo en http://localhost:${port}`);
+  console.log(`✅ Servidor corriendo en http://localhost:${port}`);
 });
