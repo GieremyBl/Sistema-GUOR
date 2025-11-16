@@ -1,13 +1,19 @@
-// src/app/page.tsx
-import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
+import { redirect } from 'next/navigation';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 export default async function Home() {
-  const session = await getServerSession();
+  const supabase = createServerComponentClient({ cookies });
+  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
+  // Si hay sesión, redirigir al dashboard
   if (session) {
-    redirect("/dashboard");
-  } else {
-    redirect("/login");
+    redirect('/dashboard');
   }
+
+  // Si no hay sesión, redirigir al login
+  redirect('/login');
 }

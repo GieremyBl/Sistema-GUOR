@@ -1,15 +1,27 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware';
-import { Permission } from '../types/roles';
-import { requirePermission } from '../utils/api-protection';
-import { usuariosController } from '../controllers/usuarios.controller';
+import {
+  getUsuarios,
+  getUsuario,
+  createUsuario,
+  updateUsuario,
+  deleteUsuario,
+} from '../controllers/usuarios.controller';
 
-const router = Router();  
-router.use(authenticate);
+const router = Router();
 
-router.get('/', requirePermission(Permission.VIEW_USERS), usuariosController.getAll);
-router.post('/', requirePermission(Permission.MANAGE_USERS), usuariosController.create);
-router.put('/:id', requirePermission(Permission.MANAGE_USERS), usuariosController.update);
-router.delete('/:id', requirePermission(Permission.DELETE_USERS), usuariosController.delete);
+// GET /api/usuarios - Listar todos con filtros
+router.get('/', getUsuarios);
+
+// GET /api/usuarios/:id - Obtener uno por ID
+router.get('/:id', getUsuario);
+
+// POST /api/usuarios - Crear nuevo
+router.post('/', createUsuario);
+
+// PATCH /api/usuarios/:id - Actualizar
+router.patch('/:id', updateUsuario);
+
+// DELETE /api/usuarios/:id - Eliminar
+router.delete('/:id', deleteUsuario);
 
 export default router;

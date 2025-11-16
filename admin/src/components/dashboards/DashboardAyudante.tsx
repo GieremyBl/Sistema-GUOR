@@ -1,0 +1,70 @@
+"use client";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Clock, CheckCircle, AlertCircle } from "lucide-react";
+
+type Usuario = {
+  id: number;
+  nombre_completo: string;
+  rol: string;
+};
+
+export default function DashboardAyudante({ usuario }: { usuario: Usuario }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Dashboard de Ayudante
+        </h1>
+        <p className="text-gray-600 mt-1">
+          Mis tareas y asignaciones del día
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Tareas Pendientes</CardTitle>
+            <Clock className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">5</div>
+            <p className="text-xs text-gray-600">Por completar</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Completadas Hoy</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">8</div>
+            <p className="text-xs text-gray-600">Tareas finalizadas</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Urgentes</CardTitle>
+            <AlertCircle className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2</div>
+            <p className="text-xs text-gray-600">Alta prioridad</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Mis Tareas</CardTitle>
+          <CardDescription>Asignaciones del día</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-500">No hay tareas asignadas</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
