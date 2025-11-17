@@ -1,4 +1,3 @@
-// ESTO DEBE SER LA PRIMERA LÍNEA - carga y valida todas las variables
 import './config/env';
 
 import express from 'express';
@@ -20,8 +19,24 @@ const port = env.PORT;
 
 // Middlewares globales
 app.use(helmet());
+
+//CORS para GitHub Codespaces y localhost
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: (origin, callback) => {
+    // Permite localhost y dominios de GitHub Codespaces
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      env.FRONTEND_URL
+    ];
+    
+    // Permite cualquier subdominio de github.dev
+    if (!origin || allowedOrigins.includes(origin) || origin.includes('.github.dev')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json());

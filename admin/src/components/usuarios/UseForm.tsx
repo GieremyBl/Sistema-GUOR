@@ -186,10 +186,12 @@ export default function UseForm({ initialData, onSubmit, isEditing = false }: Us
               <SelectValue placeholder="Selecciona un rol" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="supervisor">Supervisor</SelectItem>
-              <SelectItem value="operador">Operador</SelectItem>
-              <SelectItem value="usuario">Usuario</SelectItem>
+              <SelectItem value="administrador">Administrador</SelectItem>
+              <SelectItem value="recepcionista">Recepcionista</SelectItem>
+              <SelectItem value="diseñador">Diseñador</SelectItem>
+              <SelectItem value="cortador">Cortador</SelectItem>
+              <SelectItem value="ayudante">Ayudante</SelectItem>
+              <SelectItem value="representante_taller">Representante de Taller</SelectItem>
             </SelectContent>
           </Select>
         </div>
