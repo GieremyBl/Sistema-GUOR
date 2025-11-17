@@ -1,6 +1,10 @@
+// ESTO DEBE SER LA PRIMERA LÍNEA - carga y valida todas las variables
+import './config/env';
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { env } from './config/env';
 
 import authRoutes from './routes/auth.routes';
 import clientesRoutes from './routes/clientes.routes';
@@ -12,12 +16,12 @@ import despachosRoutes from './routes/despachos.routes';
 import talleresRoutes from './routes/talleres.routes';
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = env.PORT;
 
 // Middlewares globales
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: env.FRONTEND_URL,
   credentials: true,
 }));
 app.use(express.json());
@@ -34,5 +38,6 @@ app.use('/api/despachos', despachosRoutes);
 app.use('/api/talleres', talleresRoutes);
 
 app.listen(port, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${port}`);
+  console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
+  console.log(`📡 Conectado a Supabase`);
 });

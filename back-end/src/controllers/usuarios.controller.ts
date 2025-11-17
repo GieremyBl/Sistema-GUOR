@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 // Cliente Supabase con SERVICE_KEY para operaciones admin
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 // Función helper para obtener el cliente Supabase del usuario autenticado

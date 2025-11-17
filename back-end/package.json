@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.51.1",
     "@prisma/client": "^6.19.0",
     "@supabase/supabase-js": "^2.76.1",
     "bcryptjs": "^3.0.3",

@@ -1,6 +1,4 @@
-import { redirect } from 'next/navigation';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import DashboardAdmin from '@/components/dashboards/DashboardAdmin';
 import DashboardRecepcionista from '@/components/dashboards/DashboardRecepcionista';
 import DashboardDiseñador from '@/components/dashboards/DashboardDiseñador';
@@ -9,28 +7,22 @@ import DashboardAyudante from '@/components/dashboards/DashboardAyudante';
 import DashboardRepresentante from '@/components/dashboards/DashboardRepresentante';
 
 export default async function DashboardPage() {
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = await createClient();
 
+  // Obtener la sesión (ya validada por el layout)
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  if (!session) {
-    redirect('/login');
-  }
-
+  // Obtener el usuario (ya validado por el layout, pero necesitamos sus datos completos)
   const { data: usuario } = await supabase
     .from('usuarios')
     .select('*')
-    .eq('auth_id', session.user.id)
+    .eq('auth_id', session!.user.id)
     .single();
 
-  if (!usuario || usuario.estado !== 'ACTIVO') {
-    redirect('/login');
-  }
-
   // Renderizar dashboard según el rol
-  switch (usuario.rol) {
+  switch (usuario!.rol) {
     case 'administrador':
       return <DashboardAdmin usuario={usuario} />;
     case 'recepcionista':

@@ -45,7 +45,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
     title: 'Dashboard',
-    href: '/dashboard',
+    href: '/Panel-Administrativo/dashboard',
     icon: LayoutDashboard,
     roles: ['administrador', 'recepcionista', 'diseñador', 'cortador', 'ayudante', 'representante_taller'],
   },
@@ -56,24 +56,24 @@ const navItems: NavItem[] = [
     subItems: [
       {
         title: 'Lista de Usuarios',
-        href: '/dashboard/usuarios',
+        href: '/Panel-Administrativo/usuarios',
         icon: Users,
       },
       {
         title: 'Nuevo Usuario',
-        href: '/dashboard/usuarios/nuevo',
+        href: '/Panel-Administrativo/usuarios/nuevo',
         icon: UserPlus,
       },
       {
         title: 'Roles y Permisos',
-        href: '/dashboard/usuarios/roles',
+        href: '/Panel-Administrativo/usuarios/roles',
         icon: Shield,
       },
     ],
   },
   {
     title: 'Clientes',
-    href: '/dashboard/clientes',
+    href: '/Panel-Administrativo/clientes',
     icon: Users,
     roles: ['administrador', 'recepcionista'],
   },
@@ -84,16 +84,16 @@ const navItems: NavItem[] = [
     subItems: [
       {
         title: 'Todos los Pedidos',
-        href: '/dashboard/pedidos',
+        href: '/Panel-Administrativo/pedidos',
         icon: ShoppingCart,
       },
       {
         title: 'Nuevo Pedido',
-        href: '/dashboard/pedidos/nuevo',
+        href: '/Panel-Administrativo/pedidos/nuevo',
       },
       {
         title: 'Historial',
-        href: '/dashboard/pedidos/historial',
+        href: '/Panel-Administrativo/pedidos/historial',
         icon: FileText,
       },
     ],
@@ -105,37 +105,37 @@ const navItems: NavItem[] = [
     subItems: [
       {
         title: 'Lista de Productos',
-        href: '/dashboard/productos',
+        href: '/Panel-Administrativo/productos',
         icon: Package,
       },
       {
         title: 'Categorías',
-        href: '/dashboard/productos/categorias',
+        href: '/Panel-Administrativo/productos/categorias',
         icon: Tags,
       },
     ],
   },
   {
     title: 'Inventario',
-    href: '/dashboard/inventario',
+    href: '/Panel-Administrativo/inventario',
     icon: Boxes,
     roles: ['administrador', 'diseñador'],
   },
   {
     title: 'Corte',
-    href: '/dashboard/corte',
+    href: '/Panel-Administrativo/corte',
     icon: Scissors,
     roles: ['administrador', 'cortador'],
   },
   {
     title: 'Confecciones',
-    href: '/dashboard/confecciones',
+    href: '/Panel-Administrativo/confecciones',
     icon: Building2,
     roles: ['administrador', 'representante_taller'],
   },
   {
     title: 'Cotizaciones',
-    href: '/dashboard/cotizaciones',
+    href: '/Panel-Administrativo/cotizaciones',
     icon: DollarSign,
     roles: ['administrador', 'recepcionista'],
   },
@@ -146,21 +146,21 @@ const navItems: NavItem[] = [
     subItems: [
       {
         title: 'Ventas',
-        href: '/dashboard/reportes/ventas',
+        href: '/Panel-Administrativo/reportes/ventas',
       },
       {
         title: 'Producción',
-        href: '/dashboard/reportes/produccion',
+        href: '/Panel-Administrativo/reportes/produccion',
       },
       {
         title: 'Inventario',
-        href: '/dashboard/reportes/inventario',
+        href: '/Panel-Administrativo/reportes/inventario',
       },
     ],
   },
   {
     title: 'Configuración',
-    href: '/dashboard/configuracion',
+    href: '/Panel-Administrativo/configuracion',
     icon: Settings,
     roles: ['administrador'],
   },

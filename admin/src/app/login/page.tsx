@@ -50,7 +50,7 @@ export default function LoginPage() {
       }
 
       // 3. Verificar que el usuario esté activo
-      if (usuario.estado !== 'ACTIVO') {
+      if (usuario.estado !== 'activo') {
         await supabase.auth.signOut();
         setError("Tu cuenta está inactiva. Contacta al administrador.");
         setIsLoading(false);
@@ -64,7 +64,7 @@ export default function LoginPage() {
         .eq('id', usuario.id);
 
       // 5. Redirigir al dashboard
-      router.push("/dashboard");
+      router.push("/Panel-Administrativo/dashboard");
       router.refresh();
 
     } catch (error) {
