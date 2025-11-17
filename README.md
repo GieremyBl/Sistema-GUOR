@@ -25,12 +25,7 @@
    pnpm install
    ```
 
-4. **Generar Prisma Client**
-   ```bash
-   pnpm prisma generate
-   ```
-
-5. **Ejecutar el sistema**
+4. **Ejecutar el sistema**
    ```bash
    pnpm run dev
    ```
@@ -64,7 +59,6 @@
 |---------|-------------|
 | `pnpm install` | Instala todas las dependencias |
 | `pnpm run dev` | Inicia el servidor de desarrollo |
-| `pnpm prisma generate` | Genera el cliente de Prisma |
 | `pnpm run build` | Compila el proyecto para producción |
 
 ### Backend
