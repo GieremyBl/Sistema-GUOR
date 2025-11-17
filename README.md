@@ -44,7 +44,7 @@
 
 3. **Generar Prisma Client**
    ```bash
-   npm run prisma generate
+   npx prisma generate
    ```
 
 4. **Ejecutar el servidor**
