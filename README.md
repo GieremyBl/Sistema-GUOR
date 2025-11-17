@@ -47,9 +47,9 @@
    npm install
    ```
 
-3. **Generar Prisma Client**
+3. **Generar el Cliente Prisma**
    ```bash
-   npm run prisma generate
+   npx prisma generate
    ```
 
 4. **Ejecutar el servidor**
