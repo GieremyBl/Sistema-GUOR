@@ -70,6 +70,7 @@ export function usePermissions() {
     return permissions.every(p => hasPermission(p));
   };
 
+  
   return {
     hasPermission,
     hasAnyPermission,

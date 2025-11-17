@@ -5,36 +5,29 @@ import { useRouter, useParams } from 'next/navigation';
 import UseForm from '@/components/usuarios/UseForm';
 import { useToast } from '@/app/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { getUsuario, updateUsuario, Usuario } from '@/lib/api'; // ⬅️ Importar
 
 export default function EditarUsuarioPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const [usuario, setUsuario] = useState(null);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchUsuario();
+    loadUsuario();
   }, [params.id]);
 
-  const fetchUsuario = async () => {
+  const loadUsuario = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/usuarios/${params.id}`
-      );
-
-      if (!response.ok) {
-        throw new Error('Usuario no encontrado');
-      }
-
-      const data = await response.json();
+      const data = await getUsuario(params.id as string); // ⬅️ Usar función centralizada
       setUsuario(data.usuario);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cargando usuario:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'No se pudo cargar el usuario',
+        description: error.message || 'No se pudo cargar el usuario',
       });
       router.push('/Panel-Administrativo/usuarios');
     } finally {
@@ -44,19 +37,7 @@ export default function EditarUsuarioPage() {
 
   const handleSubmit = async (data: any) => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/usuarios/${params.id}`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error actualizando usuario');
-      }
+      await updateUsuario(params.id as string, data); // ⬅️ Usar función centralizada
 
       toast({
         title: 'Éxito',
@@ -84,6 +65,10 @@ export default function EditarUsuarioPage() {
         </div>
       </div>
     );
+  }
+
+  if (!usuario) {
+    return null;
   }
 
   return (

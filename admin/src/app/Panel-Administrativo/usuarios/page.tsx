@@ -8,16 +8,7 @@ import DeleteUserDialog from '@/components/usuarios/DeleteUserDialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/app/hooks/use-toast';
-
-interface Usuario {
-  id: string;
-  nombre_completo: string;
-  email: string;
-  telefono?: string;
-  rol: string;
-  estado: string;
-  created_at: string;
-}
+import { fetchUsuarios, deleteUsuario, Usuario } from '@/lib/api'; // ⬅️ Importar desde api.ts
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -37,32 +28,20 @@ export default function UsuariosPage() {
   });
   const [userToDelete, setUserToDelete] = useState<Usuario | null>(null);
 
-  // Cargar usuarios cuando cambian los filtros o la página
   useEffect(() => {
-    fetchUsuarios();
+    loadUsuarios();
   }, [filters, pagination.page]);
 
-  const fetchUsuarios = async () => {
+  const loadUsuarios = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
+      const data = await fetchUsuarios({
+        page: pagination.page,
+        limit: pagination.limit,
+        busqueda: filters.busqueda || undefined,
+        rol: filters.rol || undefined,
+        estado: filters.estado || undefined,
       });
-
-      if (filters.busqueda) params.append('busqueda', filters.busqueda);
-      if (filters.rol) params.append('rol', filters.rol);
-      if (filters.estado) params.append('estado', filters.estado);
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/usuarios?${params}`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar usuarios');
-      }
-
-      const data = await response.json();
 
       setUsuarios(data.usuarios);
       setPagination((prev) => ({
@@ -94,22 +73,14 @@ export default function UsuariosPage() {
     if (!userToDelete) return;
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/usuarios/${userToDelete.id}`,
-        { method: 'DELETE' }
-      );
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar usuario');
-      }
+      await deleteUsuario(userToDelete.id);
 
       toast({
         title: 'Éxito',
         description: 'Usuario eliminado correctamente',
       });
 
-      // Recargar lista
-      await fetchUsuarios();
+      await loadUsuarios();
       setUserToDelete(null);
     } catch (error) {
       console.error('Error eliminando usuario:', error);
@@ -123,12 +94,11 @@ export default function UsuariosPage() {
 
   const handleFiltersChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
-    setPagination((prev) => ({ ...prev, page: 1 })); // Reset a página 1
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   return (
     <div className="container mx-auto py-8 px-4">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
@@ -142,10 +112,8 @@ export default function UsuariosPage() {
         </Button>
       </div>
 
-      {/* Filtros */}
       <UserFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-      {/* Tabla */}
       <UserTable
         usuarios={usuarios}
         loading={loading}
@@ -155,7 +123,6 @@ export default function UsuariosPage() {
         onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
       />
 
-      {/* Modal de confirmación */}
       <DeleteUserDialog
         user={userToDelete}
         open={!!userToDelete}

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import UseForm from '@/components/usuarios/UseForm';
 import { useToast } from '@/app/hooks/use-toast';
+import { createUsuario } from '@/lib/api'; // ⬅️ Importar
 
 export default function NuevoUsuarioPage() {
   const router = useRouter();
@@ -10,16 +11,7 @@ export default function NuevoUsuarioPage() {
 
   const handleSubmit = async (data: any) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/usuarios`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error creando usuario');
-      }
+      await createUsuario(data); // ⬅️ Usar función centralizada
 
       toast({
         title: 'Éxito',
