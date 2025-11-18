@@ -5,7 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  directUrl = env("DATABASE_URL")
 }
 
 model Usuario { 
@@ -21,9 +21,9 @@ model Usuario {
   ultimoAcceso DateTime? 
   createdBy    String?  @map("created_by") @db.Uuid
   
-  pedidosCreador  Pedido[] @relation("PedidoCreator"    )
+  pedidosCreador  Pedido[] @relation("PedidoCreator")
   despachos    Despacho[]
-  cotizacionesCreadas Cotizacion[] @relation("CotizacionCreador") // Relación renombrada
+  cotizacionesCreadas Cotizacion[] @relation("CotizacionCreador")
 
   @@map("usuarios")
 }
@@ -47,30 +47,30 @@ model Cliente {
 }
 
 model Producto {
-  id            BigInt             @id @default(autoincrement())
-  nombre        String
-  descripcion   String?
-  precio        Float
-  categoriaId   BigInt             @map("categoria_id")
-  stock         Int                @default(0)
-  stockMinimo   Int                @default(10) @map("stock_minimo")
-  imagen        String?
-  estado        Boolean            @default(true)
-  createdAt     DateTime           @default(now()) @map("created_at")
-  updatedAt     DateTime           @updatedAt @map("updated_at")
-
-  categoria     Categoria          @relation(fields: [categoriaId], references: [id])
-  detalles      DetallePedido[]
-  variantes     VarianteProducto[]
+  id          BigInt          @id @default(autoincrement())
+  nombre      String          @db.VarChar(255)
+  descripcion String?         @db.Text
+  precio      Decimal         @db.Decimal(10, 2)
+  categoriaId BigInt          @map("categoria_id")
+  stock       Int             @default(0)
+  stockMinimo Int             @default(10) @map("stock_minimo")
+  imagen      String?         @db.VarChar(500)
+  estado      EstadoProducto  @default(activo)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  
+  categoria   Categoria          @relation(fields: [categoriaId], references: [id])
+  variantes VarianteProducto[]
+  detallesPedido DetallePedido[]
 
   @@map("productos")
 }
 
 model Categoria {
   id          BigInt     @id @default(autoincrement())
-  nombre      String
-  descripcion String?
-  estado      Boolean    @default(true)
+  nombre      String     @unique @db.VarChar(100)
+  descripcion String?    @db.Text
+  activo      Boolean    @default(true) 
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
@@ -104,7 +104,7 @@ model Pedido {
   fechaEntrega  DateTime?       @map("fecha_entrega")
   total         Float
   created_by    String?         @map("created_by") @db.Uuid
-  updated_by    String?         @map("updated_by") @db_Uuid
+  updated_by    String?         @map("updated_by") @db.Uuid
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
 
@@ -112,6 +112,7 @@ model Pedido {
   confecciones  Confeccion[]
   despachos     Despacho[]
   cliente       Cliente          @relation(fields: [clienteId], references: [id])
+  creador       Usuario?         @relation("PedidoCreator", fields: [created_by], references: [authId])
 
   @@map("pedidos")
 }
@@ -197,8 +198,8 @@ model Taller {
 
 model Cotizacion {
   id           BigInt            @id @default(autoincrement())
-  clienteId    BigInt            @map("cliente_id") // AGREGADO
-  usuarioId    BigInt            @map("usuario_id") // Usuario que la creó
+  clienteId    BigInt            @map("cliente_id")
+  usuarioId    BigInt            @map("usuario_id")
   estado       EstadoCotizacion  @default(PENDIENTE)
   total        Float
   fechaCotizac DateTime          @default(now()) @map("fecha_cotizac")
@@ -206,7 +207,7 @@ model Cotizacion {
   createdAt    DateTime          @default(now()) @map("created_at")
   updatedAt    DateTime          @updatedAt @map("updated_at")
 
-  cliente  Cliente          @relation(fields: [clienteId], references: [id]) // AGREGADO
+  cliente  Cliente          @relation(fields: [clienteId], references: [id])
   usuario  Usuario          @relation("CotizacionCreador", fields: [usuarioId], references: [id])
   items    ItemCotizacion[]
 
@@ -276,4 +277,13 @@ enum PrioridadPedido {
   NORMAL
   ALTA
   URGENTE
+}
+
+enum EstadoProducto {
+  activo
+  inactivo
+  agotado
+  descontinuado
+  
+  @@map("estado_producto")
 }

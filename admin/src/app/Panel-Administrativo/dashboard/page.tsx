@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import DashboardAdmin from '@/components/dashboards/DashboardAdmin';
 import DashboardRecepcionista from '@/components/dashboards/DashboardRecepcionista';
@@ -8,7 +8,7 @@ import DashboardAyudante from '@/components/dashboards/DashboardAyudante';
 import DashboardRepresentante from '@/components/dashboards/DashboardRepresentante';
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  const supabase = await createServerSupabaseClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 

@@ -1,10 +1,9 @@
 import './config/env';
-
+import { env } from './config/env'; 
 import express from 'express';
 import cors from 'cors';
+import { supabase } from './config/supabase'; 
 import helmet from 'helmet';
-import { env } from './config/env';
-
 import authRoutes from './routes/auth.routes';
 import clientesRoutes from './routes/clientes.routes';
 import usuariosRoutes from './routes/usuarios.routes';

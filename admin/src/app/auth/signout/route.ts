@@ -1,10 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
-  const supabase = await createClient();
+  const supabase = await createServerSupabaseClient();
   
   // Cerrar sesión en Supabase
   await supabase.auth.signOut();
