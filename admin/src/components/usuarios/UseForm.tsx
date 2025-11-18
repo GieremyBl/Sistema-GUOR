@@ -39,7 +39,7 @@ export default function UseForm({ initialData, onSubmit, isEditing = false }: Us
     password: '',
     nombre_completo: initialData?.nombre_completo || '',
     telefono: initialData?.telefono || '',
-    rol: initialData?.rol || 'usuario',
+    rol: initialData?.rol || '',
     estado: initialData?.estado || 'activo',
   });
 
@@ -61,6 +61,16 @@ export default function UseForm({ initialData, onSubmit, isEditing = false }: Us
         return;
       }
 
+      // Validar que el rol sea válido
+      const rolesValidos = [
+        'administrador',
+        'recepcionista',
+        'diseñador',
+        'cortador',
+        'ayudante',
+        'representante_taller'
+      ];
+
       if (!isEditing && !formData.password) {
         setError('La contraseña es requerida');
         setLoading(false);
@@ -75,10 +85,10 @@ export default function UseForm({ initialData, onSubmit, isEditing = false }: Us
 
       // Preparar datos
       const dataToSend: any = {
-        email: formData.email,
+        email: formData.email.toLocaleLowerCase(),
         nombre_completo: formData.nombre_completo,
         telefono: formData.telefono || null,
-        rol: formData.rol,
+        rol: formData.rol.toLowerCase(),
         estado: formData.estado,
       };
 
@@ -87,8 +97,11 @@ export default function UseForm({ initialData, onSubmit, isEditing = false }: Us
         dataToSend.password = formData.password;
       }
 
+      console.log('📤 Datos a enviar:', dataToSend);
+
       await onSubmit(dataToSend);
     } catch (err: any) {
+      console.error('❌ Error al guardar:', err);
       setError(err.message || 'Ocurrió un error al guardar el usuario');
     } finally {
       setLoading(false);

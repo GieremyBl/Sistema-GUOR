@@ -26,7 +26,6 @@ app.use(cors({
     // Permite localhost y dominios de GitHub Codespaces
     const allowedOrigins = [
       'http://localhost:3000',
-      'http://localhost:3001',
       env.FRONTEND_URL
     ];
     

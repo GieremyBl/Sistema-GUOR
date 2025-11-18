@@ -1,4 +1,3 @@
-// admin/src/lib/roles-config.ts
 import { Role, Permission } from '@/app/types';
 
 export interface RoleConfig {

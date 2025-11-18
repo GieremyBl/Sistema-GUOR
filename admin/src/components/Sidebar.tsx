@@ -12,20 +12,23 @@ import {
   Scissors,
   Settings,
   BarChart3,
-  Palette,
   Boxes,
   DollarSign,
   Building2,
   ChevronDown,
-  ChevronRight,
   UserPlus,
   Shield,
   FileText,
   Tags,
+  Menu,
+  X,
+  LogOut,
 } from 'lucide-react';
 
+// ... (Tus tipos se mantienen igual) ...
 type Usuario = {
   rol: string;
+  nombre_completo?: string;
 };
 
 type SubMenuItem = {
@@ -169,14 +172,15 @@ const navItems: NavItem[] = [
 export default function Sidebar({ usuario }: { usuario: Usuario }) {
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = useState<string[]>([]);
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  // Filtrar items según rol
   const filteredNavItems = navItems.filter(item =>
     item.roles.includes(usuario.rol)
   );
 
-  // Toggle menú desplegable
   const toggleMenu = (title: string) => {
+    if (isCollapsed) setIsCollapsed(false);
     setOpenMenus(prev =>
       prev.includes(title)
         ? prev.filter(item => item !== title)
@@ -184,30 +188,90 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
     );
   };
 
-  // Verificar si un submenú está activo
   const isSubItemActive = (subItems?: SubMenuItem[]) => {
     if (!subItems) return false;
     return subItems.some(subItem => pathname === subItem.href);
   };
 
-  return (
-    <aside className="w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col h-screen">
-      {/* Logo y título */}
-      <div className="p-6 border-b border-gray-700">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-lg flex items-center justify-center">
-            <Palette className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">Modas y Estilos GUOR</h1>
-            <p className="text-xs text-gray-400">Sistema de Gestión</p>
-          </div>
-        </div>
-      </div>
+  const handleSignOut = () => {
+    window.location.href = '/auth/signout';
+  };
 
-      {/* Navegación */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        <div className="space-y-1">
+  return (
+    <>
+      {/* Botón móvil */}
+      <button
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-rose-500 text-white rounded-full shadow-lg hover:bg-rose-600 transition-all"
+      >
+        {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
+      {/* Overlay móvil */}
+      {isMobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/40 z-30 backdrop-blur-sm"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      <aside
+        onMouseEnter={() => setIsCollapsed(false)}
+        onMouseLeave={() => setIsCollapsed(true)}
+        className={cn(
+          "flex flex-col h-screen transition-all duration-300 ease-in-out border-r border-amber-100 shadow-[4px_0_24px_rgba(0,0,0,0.02)]",
+          // Ajustado a w-24 para dar espacio a los iconos w-8
+          isCollapsed ? "w-24" : "w-72", 
+          "fixed lg:relative z-40",
+          isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+        style={{ backgroundColor: '#fffbf2' }}
+      >
+        {/* Header del Sidebar */}
+        <div className="h-24 flex items-center justify-between px-6 mb-2 transition-all duration-300">
+          {!isCollapsed ? (
+            <div className="flex items-center gap-3 w-full animate-in fade-in duration-300">
+              <div className="relative w-12 h-12 flex-shrink-0">
+                <img 
+                  src="/logo.png" 
+                  alt="Logo" 
+                  className="relative w-full h-full object-contain"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="font-bold text-gray-800 leading-tight truncate">
+                  GUOR
+                </h1>
+                <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold truncate">
+                  Modas y Estilos
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full flex justify-center transition-all duration-300">
+              {/* Logo ajustado para coincidir con la proporción */}
+              <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+            </div>
+          )}
+        </div>
+
+        {/* Perfil de Usuario Compacto */}
+        {!isCollapsed && usuario.nombre_completo && (
+          <div className="px-6 mb-6 animate-in fade-in slide-in-from-left-4 duration-300">
+            <div className="bg-white/60 p-3 rounded-2xl border border-amber-100/50 shadow-sm flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-400 to-rose-500 text-white flex items-center justify-center font-bold shadow-rose-200 shadow-md text-sm">
+                {usuario.nombre_completo.charAt(0)}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-800 truncate">{usuario.nombre_completo}</p>
+                <p className="text-xs text-gray-500 capitalize truncate">{usuario.rol.replace('_', ' ')}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navegación Principal */}
+        <nav className="flex-1 px-4 space-y-2 overflow-y-auto hover:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const hasSubItems = item.subItems && item.subItems.length > 0;
@@ -215,71 +279,72 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
             const isActive = pathname === item.href || isSubItemActive(item.subItems);
 
             return (
-              <div key={item.title}>
-                {/* Item principal */}
+              <div key={item.title} className="mb-1">
                 {hasSubItems ? (
-                  // Con submenú - clickeable para expandir
                   <button
                     onClick={() => toggleMenu(item.title)}
                     className={cn(
-                      'w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200',
+                      'w-full flex items-center justify-between px-4 rounded-xl transition-all duration-300 group',
+                      isCollapsed ? "py-4" : "py-3", // Padding mayor para iconos grandes
                       isActive
-                        ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-lg'
-                        : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                        ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md shadow-rose-200'
+                        : 'text-gray-600 hover:bg-white hover:text-rose-600 hover:shadow-sm'
                     )}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className={cn("flex items-center gap-3 transition-all duration-300", isCollapsed && "justify-center w-full")}>
                       <Icon className={cn(
-                        "w-5 h-5 flex-shrink-0",
-                        isActive ? "text-white" : "text-gray-400"
+                        "transition-all duration-300",
+                        // AQUI ESTÁ EL CAMBIO: w-8 h-8
+                        isCollapsed ? "w-8 h-8" : "w-5 h-5", 
+                        !isActive && "text-gray-400 group-hover:text-rose-500"
                       )} />
-                      <span className="font-medium">{item.title}</span>
+                      {!isCollapsed && <span className="font-medium text-sm truncate">{item.title}</span>}
                     </div>
-                    {isOpen ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
+                    {!isCollapsed && (
+                      <ChevronDown className={cn("w-4 h-4 transition-transform duration-200 opacity-70", isOpen && "rotate-180")} />
                     )}
                   </button>
                 ) : (
-                  // Sin submenú - link directo
                   <Link
                     href={item.href!}
                     className={cn(
-                      'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
+                      'flex items-center gap-3 px-4 rounded-xl transition-all duration-300 group',
+                      isCollapsed ? "py-4" : "py-3",
                       isActive
-                        ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-lg scale-105'
-                        : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                        ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md shadow-rose-200'
+                        : 'text-gray-600 hover:bg-white hover:text-rose-600 hover:shadow-sm',
+                      isCollapsed && "justify-center"
                     )}
+                    title={isCollapsed ? item.title : ''}
                   >
                     <Icon className={cn(
-                      "w-5 h-5 flex-shrink-0",
-                      isActive ? "text-white" : "text-gray-400"
+                      "transition-all duration-300",
+                      // AQUI ESTÁ EL CAMBIO: w-8 h-8
+                      isCollapsed ? "w-8 h-8" : "w-5 h-5",
+                      !isActive && "text-gray-400 group-hover:text-rose-500"
                     )} />
-                    <span className="font-medium">{item.title}</span>
+                    {!isCollapsed && <span className="font-medium text-sm truncate">{item.title}</span>}
                   </Link>
                 )}
 
-                {/* Submenú desplegable */}
-                {hasSubItems && isOpen && (
-                  <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-700 pl-4">
+                {/* Submenú */}
+                {hasSubItems && isOpen && !isCollapsed && (
+                  <div className="mt-1 ml-4 pl-4 space-y-1 border-l border-amber-200/60 animate-in slide-in-from-top-2 duration-200">
                     {item.subItems!.map((subItem) => {
-                      const SubIcon = subItem.icon;
                       const isSubActive = pathname === subItem.href;
-
                       return (
                         <Link
                           key={subItem.href}
                           href={subItem.href}
                           className={cn(
-                            'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200',
+                            'flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
                             isSubActive
-                              ? 'bg-rose-600/20 text-rose-300 font-medium'
-                              : 'text-gray-400 hover:bg-gray-700/30 hover:text-gray-200'
+                              ? 'bg-rose-50 text-rose-600 font-medium'
+                              : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
                           )}
                         >
-                          {SubIcon && <SubIcon className="w-4 h-4" />}
-                          <span>{subItem.title}</span>
+                          <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", isSubActive ? "bg-rose-500" : "bg-gray-300")} />
+                          <span className="truncate">{subItem.title}</span>
                         </Link>
                       );
                     })}
@@ -288,20 +353,32 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
               </div>
             );
           })}
-        </div>
-      </nav>
+        </nav>
 
-      {/* Footer del sidebar */}
-      <div className="p-4 border-t border-gray-700">
-        <div className="bg-gray-800/50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 text-center">
-            © 2025 Modas y Estilos Guor
-          </p>
-          <p className="text-xs text-gray-500 text-center mt-1">
-            v1.0.0
-          </p>
+        {/* Footer / Logout */}
+        <div className="p-4 border-t border-amber-100">
+          {!isCollapsed ? (
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors group animate-in fade-in duration-200"
+            >
+              <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium text-sm truncate">Cerrar Sesión</span>
+            </button>
+          ) : (
+            <button onClick={handleSignOut} className="w-full flex justify-center p-2 text-gray-500 hover:text-red-600 transition-all duration-300">
+              {/* Icono de logout también a w-8 h-8 */}
+              <LogOut className="w-8 h-8" />
+            </button>
+          )}
+          
+          {!isCollapsed && (
+            <div className="mt-4 text-center animate-in fade-in duration-200">
+               <p className="text-[10px] text-gray-400 font-medium">© 2025 GUOR System v1.0</p>
+            </div>
+          )}
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

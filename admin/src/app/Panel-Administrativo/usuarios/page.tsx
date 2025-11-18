@@ -8,7 +8,7 @@ import DeleteUserDialog from '@/components/usuarios/DeleteUserDialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/app/hooks/use-toast';
-import { fetchUsuarios, deleteUsuario, Usuario } from '@/lib/api'; // ⬅️ Importar desde api.ts
+import { fetchUsuarios, deleteUsuario, Usuario } from '@/lib/api'; 
 
 export default function UsuariosPage() {
   const router = useRouter();

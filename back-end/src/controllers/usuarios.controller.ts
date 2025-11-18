@@ -31,14 +31,14 @@ const getSupabaseClient = (token?: string) => {
  */
 export const verifyToken = async (req: Request, res: Response, next: any) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  
+
   if (!token) {
     return res.status(401).json({ error: 'Token no proporcionado' });
   }
 
   try {
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-    
+
     if (error || !user) {
       return res.status(401).json({ error: 'Token inválido' });
     }
@@ -65,7 +65,7 @@ export const getUsuarios = async (req: Request, res: Response) => {
     // Construir query
     let query = supabaseAdmin
       .from('usuarios')
-      .select('id, email, nombre_completo, telefono, rol, estado, created_at, updated_at', { count: 'exact' });
+      .select('id, email, nombre_completo, telefono, rol, estado, created_at, updated_at, created_by', { count: 'exact' });
 
     // Aplicar filtros
     if (busqueda) {
@@ -109,9 +109,10 @@ export const getUsuario = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    // 💡 MODIFICACIÓN: Añadir 'created_by' a la selección
     const { data: usuario, error } = await supabaseAdmin
       .from('usuarios')
-      .select('id, email, nombre_completo, telefono, rol, estado, created_at, updated_at')
+      .select('id, email, nombre_completo, telefono, rol, estado, created_at, updated_at, created_by')
       .eq('id', id)
       .single();
 
@@ -134,6 +135,13 @@ export const createUsuario = async (req: Request, res: Response) => {
   try {
     const { email, password, nombre_completo, telefono, rol } = req.body;
 
+    const adminToken = req.headers.authorization?.replace('Bearer ', '');
+
+    // Validación para el token del administrador (debe estar logueado)
+    if (!adminToken) {
+      return res.status(401).json({ error: 'Acceso denegado. Se requiere autenticación de administrador.' });
+    }
+
     // Validaciones
     if (!email || !password || !nombre_completo || !rol) {
       return res.status(400).json({
@@ -154,7 +162,15 @@ export const createUsuario = async (req: Request, res: Response) => {
       });
     }
 
-    const rolesValidos = ['admin', 'usuario', 'supervisor', 'operador'];
+    const rolesValidos = [
+      'administrador',
+      'recepcionista',
+      'diseñador',
+      'cortador',
+      'ayudante',
+      'representante_taller'
+    ];
+
     if (!rolesValidos.includes(rol)) {
       return res.status(400).json({ error: 'Rol inválido', rolesValidos });
     }
@@ -170,7 +186,7 @@ export const createUsuario = async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'El email ya está registrado' });
     }
 
-    // 1. Crear usuario en Auth
+    // 1. Crear usuario en Auth (usando Service Role Key)
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -186,30 +202,45 @@ export const createUsuario = async (req: Request, res: Response) => {
       return res.status(400).json({ error: authError?.message || 'Error creando usuario en Auth' });
     }
 
-    // 2. Crear en tabla usuarios
-    const { data: usuario, error: dbError } = await supabaseAdmin
+    const newUserAuthId = authUser.user.id;
+    // 💡 CREAR CLIENTE AUTENTICADO para RPC
+    const authenticatedSupabaseClient = getSupabaseClient(adminToken);
+
+    // 2. Insertar en tabla usuarios usando la FUNCIÓN RPC (para capturar auth.uid())
+    const { error: rpcError } = await authenticatedSupabaseClient.rpc(
+      'insert_new_user_with_creator', // Nombre de la función RPC en Supabase
+      {
+        auth_id_input: newUserAuthId,
+        email_input: email,
+        nombre_completo_input: nombre_completo,
+        telefono_input: telefono || null,
+        rol_input: rol,
+      }
+    );
+
+    if (rpcError) {
+      console.error('Error llamando a RPC (insert_new_user_with_creator):', rpcError);
+      // Rollback: eliminar de Auth si falla la inserción en BD
+      await supabaseAdmin.auth.admin.deleteUser(newUserAuthId);
+      return res.status(400).json({ error: rpcError.message || 'Error al insertar usuario en BD vía RPC' });
+    }
+
+    // 3. Obtener el usuario recién creado (incluyendo el ID del creador)
+    // 💡 MODIFICACIÓN: Añadir 'created_by' a la selección final
+    const { data: usuario, error: fetchError } = await supabaseAdmin
       .from('usuarios')
-      .insert({
-        auth_id: authUser.user.id,
-        email,
-        nombre_completo,
-        telefono: telefono || null,
-        rol,
-        estado: 'activo',
-      })
-      .select('id, email, nombre_completo, telefono, rol, estado, created_at')
+      .select('id, email, nombre_completo, telefono, rol, estado, created_at, created_by') 
+      .eq('auth_id', newUserAuthId)
       .single();
 
-    if (dbError) {
-      console.error('Error insertando en BD:', dbError);
-      // Rollback: eliminar de Auth
-      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
-      return res.status(400).json({ error: dbError.message });
+    if (fetchError) {
+      console.error('Error recuperando usuario después de RPC:', fetchError);
+      // No devolvemos error 400/500 porque el usuario ya se creó.
     }
 
     return res.status(201).json({
       message: 'Usuario creado exitosamente',
-      usuario,
+      usuario: usuario || { auth_id: newUserAuthId, email, nombre_completo, rol },
     });
   } catch (error: any) {
     console.error('Error creando usuario:', error);
@@ -242,7 +273,15 @@ export const updateUsuario = async (req: Request, res: Response) => {
 
     // Validar rol
     if (rol) {
-      const rolesValidos = ['admin', 'usuario', 'supervisor', 'operador'];
+      const rolesValidos = [
+        'administrador',
+        'recepcionista',
+        'diseñador',
+        'cortador',
+        'ayudante',
+        'representante_taller'
+      ];
+
       if (!rolesValidos.includes(rol)) {
         return res.status(400).json({ error: 'Rol inválido', rolesValidos });
       }
@@ -282,7 +321,8 @@ export const updateUsuario = async (req: Request, res: Response) => {
       .from('usuarios')
       .update(updateData)
       .eq('id', id)
-      .select('id, email, nombre_completo, telefono, rol, estado, updated_at')
+      // 💡 MODIFICACIÓN: Añadir 'created_by' a la selección
+      .select('id, email, nombre_completo, telefono, rol, estado, updated_at, created_by')
       .single();
 
     if (error) {
@@ -359,4 +399,4 @@ export const deleteUsuario = async (req: Request, res: Response) => {
     console.error('Error eliminando usuario:', error);
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
-};
+}

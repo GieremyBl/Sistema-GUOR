@@ -19,8 +19,9 @@ model Usuario {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   ultimoAcceso DateTime? 
-  createdBy    Int?
-  pedidos      Pedido[]
+  createdBy    String?  @map("created_by") @db.Uuid
+  
+  pedidosCreador  Pedido[] @relation("PedidoCreator"    )
   despachos    Despacho[]
   cotizacionesCreadas Cotizacion[] @relation("CotizacionCreador") // Relación renombrada
 
@@ -96,16 +97,17 @@ model VarianteProducto {
 
 model Pedido {
   id            BigInt          @id @default(autoincrement())
-  usuarioId     BigInt          @map("usuario_id")
   clienteId     BigInt          @map("cliente_id")         
   estado        EstadoPedido    @default(PENDIENTE)
+  prioridad     PrioridadPedido @default(NORMAL)
   fechaPedido   DateTime        @default(now()) @map("fecha_pedido")
   fechaEntrega  DateTime?       @map("fecha_entrega")
   total         Float
+  created_by    String?         @map("created_by") @db.Uuid
+  updated_by    String?         @map("updated_by") @db_Uuid
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
 
-  usuario       Usuario         @relation(fields: [usuarioId], references: [id])
   detalles      DetallePedido[]
   confecciones  Confeccion[]
   despachos     Despacho[]
@@ -267,4 +269,11 @@ enum EstadoUsuario {
   ACTIVO
   INACTIVO
   SUSPENDIDO
+}
+
+enum PrioridadPedido {
+  BAJA
+  NORMAL
+  ALTA
+  URGENTE
 }

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import UseForm from '@/components/usuarios/UseForm';
 import { useToast } from '@/app/hooks/use-toast';
-import { createUsuario } from '@/lib/api'; // ⬅️ Importar
+import { createUsuario } from '@/lib/api';
 
 export default function NuevoUsuarioPage() {
   const router = useRouter();
@@ -11,7 +11,7 @@ export default function NuevoUsuarioPage() {
 
   const handleSubmit = async (data: any) => {
     try {
-      await createUsuario(data); // ⬅️ Usar función centralizada
+      await createUsuario(data);
 
       toast({
         title: 'Éxito',
