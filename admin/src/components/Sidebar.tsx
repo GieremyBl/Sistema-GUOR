@@ -23,9 +23,11 @@ import {
   Menu,
   X,
   LogOut,
+  BookOpen,
+  Truck,
+  Plus, // ← AGREGAR ESTE IMPORT
 } from 'lucide-react';
 
-// ... (Tus tipos se mantienen igual) ...
 type Usuario = {
   rol: string;
   nombre_completo?: string;
@@ -76,9 +78,20 @@ const navItems: NavItem[] = [
   },
   {
     title: 'Clientes',
-    href: '/Panel-Administrativo/clientes',
     icon: Users,
     roles: ['administrador', 'recepcionista'],
+    subItems: [
+      {
+        title: 'Lista de Clientes',
+        href: '/Panel-Administrativo/clientes',
+        icon: Users,
+      },
+      {
+        title: 'Nuevo Cliente',
+        href: '/Panel-Administrativo/clientes/nuevo',
+        icon: UserPlus,
+      },
+    ],
   },
   {
     title: 'Pedidos',
@@ -93,6 +106,7 @@ const navItems: NavItem[] = [
       {
         title: 'Nuevo Pedido',
         href: '/Panel-Administrativo/pedidos/nuevo',
+        icon: Plus, // ← AGREGAR ICONO
       },
       {
         title: 'Historial',
@@ -102,39 +116,70 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: 'Productos',
-    icon: Package,
+    title: 'Catálogo',
+    icon: BookOpen,
     roles: ['administrador', 'diseñador'],
     subItems: [
       {
-        title: 'Lista de Productos',
+        title: 'Productos',
         href: '/Panel-Administrativo/productos',
         icon: Package,
       },
       {
+        title: 'Nuevo Producto',
+        href: '/Panel-Administrativo/productos/nuevo',
+        icon: Plus,
+      },
+      {
         title: 'Categorías',
-        href: '/Panel-Administrativo/productos/categorias',
+        href: '/Panel-Administrativo/categorias',
         icon: Tags,
+      },
+      {
+        title: 'Nueva Categoría',
+        href: '/Panel-Administrativo/categorias/nueva',
+        icon: Plus, 
       },
     ],
   },
   {
-    title: 'Inventario',
-    href: '/Panel-Administrativo/inventario',
-    icon: Boxes,
-    roles: ['administrador', 'diseñador'],
-  },
-  {
-    title: 'Corte',
-    href: '/Panel-Administrativo/corte',
+    title: 'Producción',
     icon: Scissors,
-    roles: ['administrador', 'cortador'],
+    roles: ['administrador', 'cortador', 'representante_taller'],
+    subItems: [
+      {
+        title: 'Corte',
+        href: '/Panel-Administrativo/corte',
+        icon: Scissors,
+      },
+      {
+        title: 'Confecciones',
+        href: '/Panel-Administrativo/confecciones',
+        icon: Building2,
+      },
+      {
+        title: 'Talleres',
+        href: '/Panel-Administrativo/talleres',
+        icon: Building2,
+      },
+    ],
   },
   {
-    title: 'Confecciones',
-    href: '/Panel-Administrativo/confecciones',
-    icon: Building2,
-    roles: ['administrador', 'representante_taller'],
+    title: 'Logística',
+    icon: Truck,
+    roles: ['administrador', 'diseñador'],
+    subItems: [
+      {
+        title: 'Inventario',
+        href: '/Panel-Administrativo/inventario',
+        icon: Boxes,
+      },
+      {
+        title: 'Despachos',
+        href: '/Panel-Administrativo/despachos',
+        icon: Truck,
+      },
+    ],
   },
   {
     title: 'Cotizaciones',
@@ -150,14 +195,17 @@ const navItems: NavItem[] = [
       {
         title: 'Ventas',
         href: '/Panel-Administrativo/reportes/ventas',
+        icon: DollarSign,
       },
       {
         title: 'Producción',
         href: '/Panel-Administrativo/reportes/produccion',
+        icon: Scissors,
       },
       {
         title: 'Inventario',
         href: '/Panel-Administrativo/reportes/inventario',
+        icon: Boxes,
       },
     ],
   },
@@ -220,7 +268,6 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
         onMouseLeave={() => setIsCollapsed(true)}
         className={cn(
           "flex flex-col h-screen transition-all duration-300 ease-in-out border-r border-amber-100 shadow-[4px_0_24px_rgba(0,0,0,0.02)]",
-          // Ajustado a w-24 para dar espacio a los iconos w-8
           isCollapsed ? "w-24" : "w-72", 
           "fixed lg:relative z-40",
           isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
@@ -249,7 +296,6 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
             </div>
           ) : (
             <div className="w-full flex justify-center transition-all duration-300">
-              {/* Logo ajustado para coincidir con la proporción */}
               <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
             </div>
           )}
@@ -285,7 +331,7 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
                     onClick={() => toggleMenu(item.title)}
                     className={cn(
                       'w-full flex items-center justify-between px-4 rounded-xl transition-all duration-300 group',
-                      isCollapsed ? "py-4" : "py-3", // Padding mayor para iconos grandes
+                      isCollapsed ? "py-4" : "py-3",
                       isActive
                         ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md shadow-rose-200'
                         : 'text-gray-600 hover:bg-white hover:text-rose-600 hover:shadow-sm'
@@ -294,7 +340,6 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
                     <div className={cn("flex items-center gap-3 transition-all duration-300", isCollapsed && "justify-center w-full")}>
                       <Icon className={cn(
                         "transition-all duration-300",
-                        // AQUI ESTÁ EL CAMBIO: w-8 h-8
                         isCollapsed ? "w-8 h-8" : "w-5 h-5", 
                         !isActive && "text-gray-400 group-hover:text-rose-500"
                       )} />
@@ -319,7 +364,6 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
                   >
                     <Icon className={cn(
                       "transition-all duration-300",
-                      // AQUI ESTÁ EL CAMBIO: w-8 h-8
                       isCollapsed ? "w-8 h-8" : "w-5 h-5",
                       !isActive && "text-gray-400 group-hover:text-rose-500"
                     )} />
@@ -332,6 +376,8 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
                   <div className="mt-1 ml-4 pl-4 space-y-1 border-l border-amber-200/60 animate-in slide-in-from-top-2 duration-200">
                     {item.subItems!.map((subItem) => {
                       const isSubActive = pathname === subItem.href;
+                      const SubIcon = subItem.icon;
+                      
                       return (
                         <Link
                           key={subItem.href}
@@ -343,7 +389,11 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
                               : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
                           )}
                         >
-                          <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", isSubActive ? "bg-rose-500" : "bg-gray-300")} />
+                          {SubIcon ? (
+                            <SubIcon className={cn("w-4 h-4 flex-shrink-0", isSubActive ? "text-rose-500" : "text-gray-400")} />
+                          ) : (
+                            <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", isSubActive ? "bg-rose-500" : "bg-gray-300")} />
+                          )}
                           <span className="truncate">{subItem.title}</span>
                         </Link>
                       );
@@ -367,7 +417,6 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
             </button>
           ) : (
             <button onClick={handleSignOut} className="w-full flex justify-center p-2 text-gray-500 hover:text-red-600 transition-all duration-300">
-              {/* Icono de logout también a w-8 h-8 */}
               <LogOut className="w-8 h-8" />
             </button>
           )}

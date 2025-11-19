@@ -11,8 +11,11 @@ type Usuario = {
 
 export default function DashboardRepresentante({ usuario }: { usuario: Usuario }) {
   return (
-    <div className="space-y-6">
-      <div>
+  <div className="min-h-screen bg-gray-50">
+      {/* Contenedor principal con padding generoso */}
+      <div className="container mx-auto px-8 py-8 max-w-7xl">
+        {/* Header con más espacio */}
+        <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
           Dashboard de Representante
         </h1>
@@ -20,7 +23,7 @@ export default function DashboardRepresentante({ usuario }: { usuario: Usuario }
           Gestión del taller y confecciones
         </p>
       </div>
-
+      {/* KPIs para representante */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -43,7 +46,7 @@ export default function DashboardRepresentante({ usuario }: { usuario: Usuario }
             <p className="text-xs text-gray-600">Esta semana</p>
           </CardContent>
         </Card>
-
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Personal</CardTitle>
@@ -55,7 +58,7 @@ export default function DashboardRepresentante({ usuario }: { usuario: Usuario }
           </CardContent>
         </Card>
       </div>
-
+      {/* Sección de estado del taller */}
       <Card>
         <CardHeader>
           <CardTitle>Estado del Taller</CardTitle>
@@ -66,5 +69,6 @@ export default function DashboardRepresentante({ usuario }: { usuario: Usuario }
         </CardContent>
       </Card>
     </div>
+  </div>
   );
 }

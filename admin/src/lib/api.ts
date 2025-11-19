@@ -36,12 +36,32 @@ export type EstadoPedido =
 export type PrioridadPedido = 'BAJA' | 'NORMAL' | 'ALTA' | 'URGENTE';
 
 export interface Cliente {
-  id: string;
-  ruc: string;
-  razon_social: string;
+   id: number; 
+  ruc?: number | null;
+  razon_social?: string | null;
+  email: string;
+  telefono?: number | null;
+  direccion?: string | null;
+  activo: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ClienteCreateInput {
+  razon_social?: string | null;
+  ruc?: number | null;
+  email: string;
+  telefono?: number | null;
+  direccion?: string | null;
+}
+
+export interface ClienteUpdateInput {
+  razon_social?: string | null;
+  ruc?: number | null;
   email?: string;
-  telefono?: string;
-  direccion?: string;
+  telefono?: number | null;
+  direccion?: string | null;
+  activo?: boolean;
 }
 
 export interface Producto {
@@ -129,6 +149,72 @@ export interface EstadisticasPedidos {
   totalFacturado: number;
   porEstado: Record<EstadoPedido, number>;
   porPrioridad: Record<PrioridadPedido, number>;
+}
+
+export interface Categoria {
+    id: number;
+    nombre: string;
+    descripcion: string | null;
+    activo: boolean;
+    created_at: string;
+    updated_at: string | null;
+}
+
+export interface CategoriasResponse {
+    success: boolean;
+    data: Categoria[];
+}
+
+export interface CategoriaData {
+    nombre: string;
+    descripcion?: string;
+    activo?: boolean;
+}
+
+export interface CategoriaCreateData {
+    nombre: string;
+    descripcion?: string | null;
+    activo?: boolean;
+}
+
+export interface CategoriaUpdateData {
+    nombre?: string;
+    descripcion?: string | null;
+    activo?: boolean;
+}
+
+export interface ProductoApi {
+    id: number;
+    nombre: string;
+    descripcion: string | null;
+    categoria_id: number;
+    imagen: string | null;
+    precio: number; 
+    stock: number;
+    stock_minimo: number; 
+    estado: 'activo' | 'inactivo';
+    created_at: string;
+    updated_at: string | null;
+    categoria: { id: number; nombre: string }; 
+}
+
+export interface ProductosResponse {
+    success: boolean;
+    data: ProductoApi[];
+}
+
+export interface ProductoCreateData {
+    nombre: string;
+    descripcion?: string;
+    categoria_id: number;
+    precio: number;
+    stock?: number;
+    stock_minimo?: number;
+    imagen?: string;
+}
+
+export interface ProductoUpdateData extends Partial<ProductoCreateData> {
+    estado?: 'activo' | 'inactivo';
 }
 
 //Funciones del API de Usuarios
@@ -312,3 +398,119 @@ export async function getEstadisticasPedidos(): Promise<EstadisticasPedidos> {
 
   return response.json();
 }
+
+//Funciones de Utilidad
+
+async function handleResponse(response: Response) {
+    if (!response.ok) {
+        let errorMessage = `Error HTTP ${response.status}: ${response.statusText}`;
+        try {
+            const json = await response.json();
+            if (json.error) errorMessage = json.error;
+        } catch {}
+        throw new Error(errorMessage);
+    }
+    
+    const result = await response.json();
+
+    if (!result.success) {
+        throw new Error(result.error || 'Operación fallida en el servidor.');
+    }
+    
+    return result.data;
+}
+
+// Funciones del Cliente API para Categorías
+
+// listar todas las categorías
+
+export async function fetchCategorias(): Promise<Categoria[]> {
+  const response = await fetch('/api/categorias');
+  return handleResponse(response);
+}
+
+// Obtener una categoría por ID
+
+export async function getCategoria(id: number): Promise<Categoria> {
+  const response = await fetch(`/api/categorias/${id}`);
+  return handleResponse(response);
+}
+
+// Crear nueva categoría
+export async function createCategoria(data: CategoriaCreateData): Promise<Categoria> {
+  const response = await fetch('/api/categorias', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+}
+
+// Actualizar categoría existente
+export async function updateCategoria(id: number, data: CategoriaUpdateData): Promise<Categoria> {
+  const response = await fetch(`/api/categorias/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+}
+
+// Eliminar categoría
+
+export async function deleteCategoria(id: number): Promise<void> {
+  const response = await fetch(`/api/categorias/${id}`, {
+    method: 'DELETE',
+  });
+  const result = await handleResponse(response);
+  return result || { message : 'Categoría eliminada exitosamente' }; 
+}
+
+// Funciones del Cliente API para Productos
+
+// Crear nuevo producto
+
+export async function createProducto(data: ProductoCreateData): Promise<ProductoApi> {
+  const response = await fetch('/api/productos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+}
+
+// Actualizar producto existente
+
+export async function updateProducto(id: number, data: ProductoUpdateData): Promise<ProductoApi> {
+  const response = await fetch(`/api/productos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+}
+
+// Eliminar producto
+
+export async function deleteProducto(id: number): Promise<void> {
+  const response = await fetch(`/api/productos/${id}`, {
+    method: 'DELETE',
+  });
+  const result = await handleResponse(response);
+  return result || { message : 'Producto eliminado exitosamente' }; 
+}
+
+// Obtener un producto por ID
+
+export async function getProducto(id: number): Promise<ProductoApi> {
+  const response = await fetch(`/api/productos/${id}`);
+  return handleResponse(response);
+}
+
+// Listar todos los productos
+
+export async function fetchProductos(): Promise<ProductoApi[]> {
+  const response = await fetch('/api/productos');
+  return handleResponse(response);
+}
+

@@ -98,7 +98,7 @@ export default function UsuariosPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>

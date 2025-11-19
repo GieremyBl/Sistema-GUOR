@@ -11,7 +11,7 @@ const supabaseAdmin = createClient(
 // Función helper para obtener el cliente Supabase del usuario autenticado
 const getSupabaseClient = (token?: string) => {
   if (token) {
-    return createClient(
+    return createClient(  
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_ANON_KEY!,
       {

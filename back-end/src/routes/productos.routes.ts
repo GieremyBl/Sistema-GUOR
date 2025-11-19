@@ -1,12 +1,27 @@
 import { Router } from 'express';
-import { productosController } from '../controllers/productos.controller';
-import { authenticate } from '../middleware/auth.middleware';
+import { 
+    getAllProductos, 
+    getProducto, 
+    createProducto, 
+    updateProducto, 
+    deleteProducto,
+    getStockBajo,
+    updateStock
+} from '../controllers/productos.controller';
 
 const router = Router();
 
-router.get('/', productosController.getAll);
-router.post('/', authenticate, productosController.create);
-router.put('/:id', authenticate, productosController.updateStock);
-router.delete('/:id', authenticate, productosController.delete);
+// Rutas Especiales - Deben ir antes de la ruta dinámica /:id
+router.get('/stock-bajo', getStockBajo);
+// Rutas CRUD de Productos
+router.get('/', getAllProductos);
+router.post('/', createProducto);
+
+// Rutas que requieren ID
+router.get('/:id', getProducto);
+router.put('/:id', updateProducto);
+// PATCH para actualizar solo una parte del recurso (el stock)
+router.patch('/:id/stock', updateStock); 
+router.delete('/:id', deleteProducto);
 
 export default router;

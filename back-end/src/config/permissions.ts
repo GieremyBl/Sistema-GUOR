@@ -64,8 +64,23 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ],
 };
 
-// Helper para verificar permisos
-export function hasPermission(userRole: Role, permission: Permission): boolean {
-  const permissions = ROLE_PERMISSIONS[userRole];
+// Verifica si un rol tiene un permiso específico
+export function hasPermission(role: Role, permission: Permission): boolean {
+  const permissions = ROLE_PERMISSIONS[role];
   return permissions ? permissions.includes(permission) : false;
+}
+
+// Obtiene todos los permisos asociados a un rol
+export function getRolePermissions(role: Role): Permission[] {
+  return ROLE_PERMISSIONS[role] || [];
+}
+
+// Verifica si un rol tiene al menos uno de los permisos especificados
+export function hasAnyPermission(role: Role, permissions: Permission[]): boolean {
+  return permissions.some(permission => hasPermission(role, permission));
+}
+
+// Verifica si un rol tiene todos los permisos especificados
+export function hasAllPermissions(role: Role, permissions: Permission[]): boolean {
+  return permissions.every(permission => hasPermission(role, permission));
 }

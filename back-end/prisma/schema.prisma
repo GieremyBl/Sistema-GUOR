@@ -5,21 +5,21 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Usuario { 
-  id          BigInt    @id @default(autoincrement())
-  email       String    @unique
-  nombreCompleto String 
-  telefono    String?
-  estado      EstadoUsuario @default(ACTIVO)
+  id          BigInt          @id @default(autoincrement())
+  email       String          @unique
+  nombreCompleto String
+  telefono    String? 
+  estado      EstadoUsuario   @default(ACTIVO)
   rol         Rol
-  authId      String?   @unique @map("auth_id") @db.Uuid
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  ultimoAcceso DateTime? 
-  createdBy    String?  @map("created_by") @db.Uuid
+  authId      String?         @unique @map("auth_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  ultimoAcceso DateTime?      @map("ultimo_acceso")
+  createdBy    String?        @map("created_by") @db.Uuid
   
   pedidosCreador  Pedido[] @relation("PedidoCreator")
   despachos    Despacho[]
@@ -29,18 +29,19 @@ model Usuario {
 }
 
 model Cliente {
-  id          BigInt   @id @default(autoincrement())
-  ruc         Decimal  @db.Decimal
-  razonSocial String?  @map("razon_social")
-  email       String   @unique  
-  contraseña  String   
-  telefono    BigInt?
-  direccion   String?
-  activo      Boolean  @default(true)
-  authId      String?  @unique @map("auth_id") @db.Uuid  
-  createdAt   DateTime @default(now()) @map("created_at")
+  id           BigInt   @id @default(autoincrement())
+  ruc          Decimal? @db.Decimal(11, 0)
+  razonSocial  String?  @map("razon_social")
+  email        String   @unique
+  telefono     BigInt?
+  direccion    String?
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  authId       String?  @unique @map("auth_id") @db.Uuid  
+  createdBy       String?          @map("created_by") @db.Uuid
 
-  pedidos      Pedido[]      
+  pedidos      Pedido[]     
   cotizaciones Cotizacion[]  
 
   @@map("clientes")

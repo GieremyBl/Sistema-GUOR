@@ -108,7 +108,7 @@ export default function RolesYPermisosPage() {
   const loadRolesData = async () => {
     try {
       setLoading(true);
-      const supabase = createClient();
+      const supabase = createServerSupabaseClient();
 
       // Obtener conteo de usuarios por rol
       const { data: usuarios, error: usuariosError } = await supabase

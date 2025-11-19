@@ -1,20 +1,21 @@
-// back-end/src/routes/pedidos.routes.ts
 import { Router } from 'express';
-import {
-  getPedidos,
-  getPedido,
-  createPedido,
-  updatePedido,
-  deletePedido,
-  getEstadisticas
+import { 
+    getPedidos, 
+    getPedido, 
+    createPedido, 
+    updatePedido, 
+    deletePedido,
+    getEstadisticas,
+    getHistorial      
 } from '../controllers/pedidos.controller';
 
 const router = Router();
 
-// GET /api/pedidos/estadisticas - Debe ir antes de /:id
+// Rutas Especiales - Deben ir antes de la ruta dinámica /:id
 router.get('/estadisticas', getEstadisticas);
+router.get('/historial', getHistorial);
 
-// CRUD básico
+// Rutas CRUD de Pedidos
 router.get('/', getPedidos);
 router.get('/:id', getPedido);
 router.post('/', createPedido);

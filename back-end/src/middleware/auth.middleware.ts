@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { Role, Permission } from '../types/roles';
 import { hasPermission } from '../config/permissions';
 import { AuthenticatedRequest } from '../types/auth.types';
@@ -8,11 +8,14 @@ import { AuthenticatedRequest } from '../types/auth.types';
  * Middleware para autenticar el token JWT
  * Agrega req.user con los datos del usuario
  */
+
 export const authenticate = async (
   req: Request,
   res: Response,
   next: NextFunction
+  
 ) => {
+  
   try {
     // Obtener token del header
     const authHeader = req.headers.authorization;
@@ -26,9 +29,12 @@ export const authenticate = async (
     
     const token = authHeader.split(' ')[1];
     
-    // Verificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    // Define el secreto a usar (dinámico si existe, sino el de .env como fallback)
+    const secret = global.JWT_SECRET_KEY || process.env.JWT_SECRET!;
     
+    // Verificar token usando el secreto dinámico
+        const decoded = jwt.verify(token, secret) as any;
+
     // Agregar usuario al request
     req.user = {
       id: decoded.id,

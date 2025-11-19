@@ -1,7 +1,18 @@
 "use server";
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+
+function getSupabaseAdminClient() {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Variables SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no definidas para el cliente Admin.');
+   }
+    // 🚨 ESTO ES CORRECTO: Usa el cliente base de Supabase con la clave Admin.
+    return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+}
 
 export type CreateUsuarioInput = {
   email: string;
@@ -25,7 +36,7 @@ export type UpdateUsuarioInput = {
  */
 export async function getUsuarios() {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     const { data: usuarios, error } = await supabase
       .from('usuarios')
@@ -46,7 +57,7 @@ export async function getUsuarios() {
  */
 export async function getUsuarioById(id: number) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     const { data: usuario, error } = await supabase
       .from('usuarios')
@@ -68,7 +79,7 @@ export async function getUsuarioById(id: number) {
  */
 export async function createUsuario(input: CreateUsuarioInput) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     // 1. Crear usuario en Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -118,7 +129,7 @@ export async function createUsuario(input: CreateUsuarioInput) {
  */
 export async function updateUsuario(input: UpdateUsuarioInput) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     const updateData: any = {
       updated_at: new Date().toISOString(),
@@ -151,7 +162,7 @@ export async function updateUsuario(input: UpdateUsuarioInput) {
  */
 export async function deleteUsuario(id: number) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     // 1. Obtener auth_id del usuario
     const { data: usuario, error: getUserError } = await supabase
@@ -193,7 +204,7 @@ export async function deleteUsuario(id: number) {
  */
 export async function changeUserPassword(userId: number, newPassword: string) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     // Obtener auth_id
     const { data: usuario, error: getUserError } = await supabase

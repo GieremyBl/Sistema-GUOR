@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { AuthenticatedRequestHandler } from '../types/handler.types';
 import { supabase } from '../config/supabase';
@@ -57,7 +57,8 @@ export class AuthController implements IAuthController {
           error: 'Credenciales inválidas',
         });
       }
-      
+
+      const secret = global.JWT_SECRET_KEY || process.env.JWT_SECRET!;
       // Generar JWT
       const token = jwt.sign(
         {
@@ -68,9 +69,9 @@ export class AuthController implements IAuthController {
           apellido: usuario.apellido,
           estado: usuario.estado,
         },
-        process.env.JWT_SECRET!,
+        secret,
         {
-          expiresIn: '7d', // Token expira en 7 días
+          expiresIn: '1h', // Token expira en 1 hora
         }
       );
       
@@ -126,9 +127,10 @@ export class AuthController implements IAuthController {
           apellido: decoded.apellido,
           estado: decoded.estado,
         },
+        global.JWT_SECRET_KEY ||
         process.env.JWT_SECRET!,
         {
-          expiresIn: '7d',
+          expiresIn: '5min',
         }
       );
       

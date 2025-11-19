@@ -2,8 +2,8 @@ import './config/env';
 import { env } from './config/env'; 
 import express from 'express';
 import cors from 'cors';
-import { supabase } from './config/supabase'; 
 import helmet from 'helmet';
+import { Router } from 'express';
 import authRoutes from './routes/auth.routes';
 import clientesRoutes from './routes/clientes.routes';
 import usuariosRoutes from './routes/usuarios.routes';
@@ -12,12 +12,21 @@ import pedidosRoutes from './routes/pedidos.routes';
 import confeccionesRoutes from './routes/confecciones.routes';
 import despachosRoutes from './routes/despachos.routes';
 import talleresRoutes from './routes/talleres.routes';
-
+import categoriaRoutes from './routes/categorias.routes';
+import cotizacionesRoutes from './routes/cotizaciones.routes';
+import variantesRoutes from './routes/variantes.routes';
+import * as crypto from 'crypto';
 const app = express();
 const port = env.PORT;
+const router = Router();
 
 // Middlewares globales
 app.use(helmet());
+
+if (!global.JWT_SECRET_KEY) {
+  global.JWT_SECRET_KEY = crypto.randomBytes(32).toString('hex');
+  console.warn('🔑 JWT Secret generado dinámicamente.');
+}
 
 //CORS para GitHub Codespaces y localhost
 app.use(cors({
@@ -49,6 +58,9 @@ app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/confecciones', confeccionesRoutes);
 app.use('/api/despachos', despachosRoutes);
 app.use('/api/talleres', talleresRoutes);
+app.use('/api/categorias', categoriaRoutes);
+app.use('/api/cotizaciones', cotizacionesRoutes);
+app.use('/api/variantes', variantesRoutes);
 
 app.listen(port, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${port}`);

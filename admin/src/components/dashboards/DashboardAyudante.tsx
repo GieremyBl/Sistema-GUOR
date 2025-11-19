@@ -11,16 +11,19 @@ type Usuario = {
 
 export default function DashboardAyudante({ usuario }: { usuario: Usuario }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gray-50">
+      {/* Contenedor principal con padding generoso */}
+      <div className="container mx-auto px-8 py-8 max-w-7xl">
+        {/* Header con más espacio */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900">
           Dashboard de Ayudante
         </h1>
         <p className="text-gray-600 mt-1">
           Mis tareas y asignaciones del día
         </p>
       </div>
-
+      {/* KPIs para ayudante */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -32,7 +35,7 @@ export default function DashboardAyudante({ usuario }: { usuario: Usuario }) {
             <p className="text-xs text-gray-600">Por completar</p>
           </CardContent>
         </Card>
-
+      
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Completadas Hoy</CardTitle>
@@ -43,7 +46,7 @@ export default function DashboardAyudante({ usuario }: { usuario: Usuario }) {
             <p className="text-xs text-gray-600">Tareas finalizadas</p>
           </CardContent>
         </Card>
-
+      
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Urgentes</CardTitle>
@@ -55,7 +58,7 @@ export default function DashboardAyudante({ usuario }: { usuario: Usuario }) {
           </CardContent>
         </Card>
       </div>
-
+      {/* Sección de tareas asignadas */}
       <Card>
         <CardHeader>
           <CardTitle>Mis Tareas</CardTitle>
@@ -66,5 +69,6 @@ export default function DashboardAyudante({ usuario }: { usuario: Usuario }) {
         </CardContent>
       </Card>
     </div>
+  </div>
   );
 }

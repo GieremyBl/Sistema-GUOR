@@ -1,10 +1,19 @@
 "use server";
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';;
+import { createClient } from '@supabase/supabase-js';;
 import { revalidatePath } from 'next/cache';
 
-// --- Tipos y Definiciones (Basados en tu api.ts) ---
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 
+function getSupabaseAdminClient() {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Variables SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no definidas para el cliente Admin.');
+   }
+    // 🚨 ESTO ES CORRECTO: Usa el cliente base de Supabase con la clave Admin.
+    return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+}
+// --- Tipos y Definiciones (Basados en tu api.ts) ---
 export type EstadoPedido = 'PENDIENTE' | 'EN_PROCESO' | 'TERMINADO' | 'ENTREGADO' | 'CANCELADO';
 export type PrioridadPedido = 'BAJA' | 'NORMAL' | 'ALTA' | 'URGENTE';
 
@@ -48,7 +57,7 @@ export type FetchPedidosParams = {
  */
 export async function getPedidos(params: FetchPedidosParams = {}) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
     const { 
       page = 1, 
       limit = 10, 
@@ -119,7 +128,7 @@ export async function getPedidos(params: FetchPedidosParams = {}) {
  */
 export async function getPedidoById(id: string) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     const { data: pedido, error } = await supabase
       .from('pedidos')
@@ -149,7 +158,7 @@ export async function getPedidoById(id: string) {
  */
 export async function createPedido(input: CreatePedidoInput) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     // 1. Obtener usuario actual si no viene en el input
     let userId = input.created_by;
@@ -216,7 +225,7 @@ export async function createPedido(input: CreatePedidoInput) {
  */
 export async function updatePedido(input: UpdatePedidoInput) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     const updateData: any = {
       updated_at: new Date().toISOString(),
@@ -251,7 +260,7 @@ export async function updatePedido(input: UpdatePedidoInput) {
  */
 export async function deletePedido(id: string) {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
 
     // Asumiendo que tienes "On Delete Cascade" configurado en la base de datos
     // para los detalles. Si no, primero debes borrar los detalles.
@@ -276,7 +285,7 @@ export async function deletePedido(id: string) {
  */
 export async function getEstadisticasPedidos() {
   try {
-    const supabase = await createServerSupabaseClient();
+    let supabase = getSupabaseAdminClient(); 
     
     // Aquí haremos una consulta ligera solo de estados y totales
     const { data, error } = await supabase

@@ -13,8 +13,11 @@ type Usuario = {
 
 export default function DashboardRecepcionista({ usuario }: { usuario: Usuario }) {
   return (
-    <div className="space-y-6">
-      <div>
+   <div className="min-h-screen bg-gray-50">
+      {/* Contenedor principal con padding generoso */}
+      <div className="container mx-auto px-8 py-8 max-w-7xl">
+        {/* Header con más espacio */}
+        <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
           Dashboard de Recepción
         </h1>
@@ -92,5 +95,6 @@ export default function DashboardRecepcionista({ usuario }: { usuario: Usuario }
         </CardContent>
       </Card>
     </div>
+  </div>
   );
 }

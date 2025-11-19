@@ -1,68 +1,74 @@
 import { Role, Permission } from '@/app/types';
 
-export const rolePermissions: Record<Role, Permission[]> = {
+const rolePermissions: Record<Role, Permission[]> = {
   [Role.ADMINISTRADOR]: [
-    Permission.VIEW_USUARIOS,
-    Permission.MANAGE_USUARIOS,
-    Permission.VIEW_PRODUCTOS,
-    Permission.MANAGE_PRODUCTOS,
-    Permission.VIEW_DASHBOARD,
-    Permission.VIEW_INVENTARIO,
-    Permission.MANAGE_INVENTARIO,
-    Permission.VIEW_REPORTES,
-    Permission.GENERATE_REPORTES,
-    Permission.VIEW_PAGOS,
-    Permission.MANAGE_PAGOS,
-    Permission.VIEW_ORDENES,
-    Permission.MANAGE_ORDENES,
-    Permission.VIEW_VENTAS,
-    Permission.MANAGE_VENTAS,
-    Permission.VIEW_COTIZACIONES,
-    Permission.MANAGE_COTIZACIONES,
-    Permission.VIEW_TALLERES,
-    Permission.MANAGE_TALLERES,
-    Permission.VIEW_CONFECCIONES,
-    Permission.MANAGE_CONFECCIONES,
-    Permission.VIEW_DESPACHO,
-    Permission.CONFIRM_ENTREGA,
-    Permission.UPDATE_ESTADO_DESPACHO
+    Permission.VIEW_USERS,
+    Permission.MANAGE_USERS,
+    Permission.VIEW_CLIENTS,
+    Permission.MANAGE_CLIENTS,
+    Permission.VIEW_ORDERS,
+    Permission.CREATE_ORDERS,
+    Permission.EDIT_ORDERS,
+    Permission.DELETE_ORDERS,
+    Permission.CHANGE_ORDER_STATUS,
+    Permission.VIEW_PRODUCTS,
+    Permission.MANAGE_PRODUCTS,
+    Permission.MANAGE_STOCK,
+    Permission.VIEW_CATEGORIES,
+    Permission.MANAGE_CATEGORIES,
+    Permission.VIEW_INVENTORY,
+    Permission.MANAGE_INVENTORY,
+    Permission.VIEW_CONFECTIONS,
+    Permission.MANAGE_CONFECTIONS,
+    Permission.VIEW_WORKSHOPS,
+    Permission.MANAGE_WORKSHOPS,
+    Permission.VIEW_QUOTES,
+    Permission.MANAGE_QUOTES,
+    Permission.VIEW_DISPATCHES,
+    Permission.MANAGE_DISPATCHES,
+    Permission.VIEW_REPORTS,
+    Permission.EXPORT_REPORTS,
+    Permission.VIEW_SETTINGS,
+    Permission.MANAGE_SETTINGS,
   ],
-  
-  [Role.RECEPCIONISTA]: [
-    Permission.VIEW_PAGOS,
-    Permission.MANAGE_PAGOS,
-    Permission.VIEW_ORDENES,
-    Permission.MANAGE_ORDENES,
-    Permission.VIEW_VENTAS,
-    Permission.MANAGE_VENTAS,
-    Permission.VIEW_COTIZACIONES,
-    Permission.MANAGE_COTIZACIONES
-  ],
-  
   [Role.CORTADOR]: [
-    Permission.VIEW_INVENTARIO,
-    Permission.REGISTER_USO_MATERIALES
+    Permission.VIEW_CONFECTIONS,
+    Permission.MANAGE_CONFECTIONS,
+    Permission.VIEW_WORKSHOPS,
+    Permission.MANAGE_WORKSHOPS,
+    Permission.VIEW_INVENTORY,
+    Permission.MANAGE_INVENTORY,
   ],
-  
-  [Role.DISEÑADOR]: [
-    Permission.VIEW_TALLERES,
-    Permission.MANAGE_TALLERES,
-    Permission.VIEW_CONFECCIONES,
-    Permission.MANAGE_CONFECCIONES
+  [Role.DISENADOR]: [ 
+    Permission.VIEW_PRODUCTS,
+    Permission.MANAGE_PRODUCTS,
+    Permission.MANAGE_STOCK,
+    Permission.VIEW_CATEGORIES,
+    Permission.MANAGE_CATEGORIES,
+    Permission.VIEW_QUOTES
   ],
-  
-  [Role.REPRESENTANTE_TALLER]: [
-    Permission.VIEW_TALLERES,
-    Permission.UPDATE_ESTADO_TALLER
+  [Role.RECEPCIONISTA]: [
+    Permission.VIEW_CLIENTS,
+    Permission.MANAGE_CLIENTS,
+    Permission.VIEW_ORDERS,
+    Permission.CREATE_ORDERS,
+    Permission.EDIT_ORDERS,
+    Permission.DELETE_ORDERS,
+    Permission.CHANGE_ORDER_STATUS,
+    Permission.VIEW_DISPATCHES,
+    Permission.MANAGE_DISPATCHES,
   ],
-  
   [Role.AYUDANTE]: [
-    Permission.VIEW_DESPACHO,
-    Permission.CONFIRM_ENTREGA,
-    Permission.UPDATE_ESTADO_DESPACHO
-  ]
+    Permission.VIEW_INVENTORY,
+    Permission.MANAGE_INVENTORY,
+  ],
+  [Role.REPRESENTANTE_TALLER]: [
+    Permission.VIEW_ORDERS,
+    Permission.CHANGE_ORDER_STATUS,
+    Permission.VIEW_WORKSHOPS,
+  ],
 };
-
+  
 export function hasPermission(userRole: Role, permission: Permission): boolean {
   return rolePermissions[userRole]?.includes(permission) ?? false;
 }
