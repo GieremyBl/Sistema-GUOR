@@ -1,4 +1,6 @@
 
+import { supabase } from '@/lib/supabase/client';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface Usuario {
@@ -36,7 +38,7 @@ export type EstadoPedido =
 export type PrioridadPedido = 'BAJA' | 'NORMAL' | 'ALTA' | 'URGENTE';
 
 export interface Cliente {
-   id: number; 
+  id: number; 
   ruc?: number | null;
   razon_social?: string | null;
   email: string;
@@ -65,15 +67,25 @@ export interface ClienteUpdateInput {
 }
 
 export interface Producto {
-  id: string;
+  id: number;
   nombre: string;
   descripcion?: string;
   precio: number;
   imagen?: string;
+  categoria_id: number;
+  stock: number;
+  stock_minimo: number;
+  estado: 'activo' | 'inactivo';
+  created_at: string;
+  updated_at?: string;
+  categoria?: { 
+    id: number; 
+    nombre: string; 
+  };
 }
 
 export interface DetallePedido {
-  id: string;
+  id: number;
   pedido_id: string;
   producto_id: string;
   producto?: Producto;
@@ -89,7 +101,7 @@ export interface Creador {
 }
 
 export interface Pedido {
-  id: string;
+  id: number;
   cliente_id: string;
   cliente?: Cliente;
   fecha_pedido: string;
@@ -125,7 +137,7 @@ export interface FetchPedidosParams {
 }
 
 export interface CreatePedidoData {
-  cliente_id: string;
+  cliente_id: number;
   fecha_entrega?: string;
   prioridad?: PrioridadPedido;
   detalles: Array<{
@@ -137,7 +149,7 @@ export interface CreatePedidoData {
 }
 
 export interface UpdatePedidoData {
-  cliente_id?: string;
+  cliente_id?: number;
   fecha_entrega?: string;
   estado?: EstadoPedido;
   prioridad?: PrioridadPedido;
@@ -172,9 +184,9 @@ export interface CategoriaData {
 }
 
 export interface CategoriaCreateData {
-    nombre: string;
-    descripcion?: string | null;
-    activo?: boolean;
+  nombre: string;
+  descripcion?: string;
+  activo: boolean;
 }
 
 export interface CategoriaUpdateData {
@@ -183,24 +195,9 @@ export interface CategoriaUpdateData {
     activo?: boolean;
 }
 
-export interface ProductoApi {
-    id: number;
-    nombre: string;
-    descripcion: string | null;
-    categoria_id: number;
-    imagen: string | null;
-    precio: number; 
-    stock: number;
-    stock_minimo: number; 
-    estado: 'activo' | 'inactivo';
-    created_at: string;
-    updated_at: string | null;
-    categoria: { id: number; nombre: string }; 
-}
-
 export interface ProductosResponse {
     success: boolean;
-    data: ProductoApi[];
+    data: Producto[];
 }
 
 export interface ProductoCreateData {
@@ -211,6 +208,7 @@ export interface ProductoCreateData {
     stock?: number;
     stock_minimo?: number;
     imagen?: string;
+    estado?: 'activo' | 'inactivo';
 }
 
 export interface ProductoUpdateData extends Partial<ProductoCreateData> {
@@ -437,15 +435,22 @@ export async function getCategoria(id: number): Promise<Categoria> {
 }
 
 // Crear nueva categoría
-export async function createCategoria(data: CategoriaCreateData): Promise<Categoria> {
-  const response = await fetch('/api/categorias', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  return handleResponse(response);
-}
+export async function createCategoria(data: CategoriaCreateData) {
+  const { data: categoria, error } = await supabase
+    .from('categorias')
+    .insert({
+      nombre: data.nombre,
+      descripcion: data.descripcion,
+      activo: data.activo,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
 
+  if (error) throw error;
+  return categoria;
+}
 // Actualizar categoría existente
 export async function updateCategoria(id: number, data: CategoriaUpdateData): Promise<Categoria> {
   const response = await fetch(`/api/categorias/${id}`, {
@@ -470,7 +475,7 @@ export async function deleteCategoria(id: number): Promise<void> {
 
 // Crear nuevo producto
 
-export async function createProducto(data: ProductoCreateData): Promise<ProductoApi> {
+export async function createProducto(data: ProductoCreateData): Promise<Producto> {
   const response = await fetch('/api/productos', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -481,7 +486,7 @@ export async function createProducto(data: ProductoCreateData): Promise<Producto
 
 // Actualizar producto existente
 
-export async function updateProducto(id: number, data: ProductoUpdateData): Promise<ProductoApi> {
+export async function updateProducto(id: number, data: ProductoUpdateData): Promise<Producto> {
   const response = await fetch(`/api/productos/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -502,14 +507,14 @@ export async function deleteProducto(id: number): Promise<void> {
 
 // Obtener un producto por ID
 
-export async function getProducto(id: number): Promise<ProductoApi> {
+export async function getProducto(id: number): Promise<Producto> {
   const response = await fetch(`/api/productos/${id}`);
   return handleResponse(response);
 }
 
 // Listar todos los productos
 
-export async function fetchProductos(): Promise<ProductoApi[]> {
+export async function fetchProductos(): Promise<Producto[]> {
   const response = await fetch('/api/productos');
   return handleResponse(response);
 }

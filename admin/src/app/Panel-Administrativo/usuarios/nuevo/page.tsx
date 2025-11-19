@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import UseForm from '@/components/usuarios/UseForm';
+import UseForm from '@/components/usuarios/CreateUserDialog';
 import { useToast } from '@/app/hooks/use-toast';
 import { createUsuario } from '@/lib/api';
 

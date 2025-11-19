@@ -19,7 +19,7 @@ export default function PedidosTable({ pedidos }: { pedidos: Pedido[] }) {
         <tbody>
           {pedidos.map((pedido) => (
             <tr key={pedido.id} className="border-b hover:bg-gray-50">
-              <td className="p-2">{pedido.id.slice(0, 8)}...</td>
+              <td className="p-2">{pedido.id}...</td>
               <td className="p-2">{pedido.cliente?.razon_social || 'N/A'}</td>
               <td className="p-2">{pedido.estado}</td>
               <td className="p-2">${pedido.total}</td>

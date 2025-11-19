@@ -9,7 +9,7 @@ import {
   getProducto,
   updateProducto,
   fetchCategorias,
-  ProductoApi,
+  Producto,
   Categoria,
   ProductoUpdateData,
 } from '@/lib/api';
@@ -18,7 +18,7 @@ export default function EditarProductoPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const [producto, setProducto] = useState<ProductoApi | null>(null);
+  const [producto, setProducto] = useState<Producto | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,9 +54,9 @@ export default function EditarProductoPage() {
         nombre: data.nombre,
         descripcion: data.descripcion,
         precio: data.precio,
-        categoria_id: Number(data.categoriaId),
+        categoria_id: Number(data.categoria_id),
         stock: data.stock,
-        stock_minimo: data.stockMinimo,
+        stock_minimo: data.stock_minimo,
         imagen: data.imagen,
         estado: data.estado,
       });
@@ -115,7 +115,7 @@ export default function EditarProductoPage() {
       <EditProductoDialog
         open={true}
         onOpenChange={(open) => !open && router.push('/Panel-Administrativo/productos')}
-        productos={productoTransformado}
+        producto={productoTransformado}
         categorias={categoriasTransformadas}
         onSubmit={handleSubmit}
       />

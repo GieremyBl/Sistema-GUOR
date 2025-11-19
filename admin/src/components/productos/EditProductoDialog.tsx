@@ -21,13 +21,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+// ✅ CORRECCIÓN 1: Actualizamos la interfaz para aceptar number | string
+// Esto hace que el componente sea flexible y no falle si la BD envía un número.
 interface Producto {
-  id: string;
+  id: string | number; 
   nombre: string;
   descripcion?: string;
   precio: number;
-  categoria_id?: string;
-  categoriaId?: string;
+  categoria_id?: string | number; // Aceptamos ambos
+  categoriaId?: string | number;  // Aceptamos ambos
   stock: number;
   stock_minimo?: number;
   stockMinimo?: number;
@@ -36,7 +38,7 @@ interface Producto {
 }
 
 interface Categoria {
-  id: string;
+  id: string | number; // ID de categoría también flexible
   nombre: string;
 }
 
@@ -45,6 +47,7 @@ interface EditProductoDialogProps {
   onOpenChange: (open: boolean) => void;
   producto: Producto | null;
   categorias: Categoria[];
+  // ✅ CORRECCIÓN 2: onSubmit también debe aceptar ID flexible
   onSubmit: (id: string, data: any) => Promise<void>;
 }
 
@@ -56,6 +59,8 @@ export default function EditProductoDialog({
   onSubmit,
 }: EditProductoDialogProps) {
   const [loading, setLoading] = useState(false);
+  
+  // Estado inicial del formulario
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -73,6 +78,7 @@ export default function EditProductoDialog({
         nombre: producto.nombre,
         descripcion: producto.descripcion || '',
         precio: producto.precio.toString(),
+        // ✅ CORRECCIÓN 3: Manejo seguro de IDs
         categoriaId:
           producto.categoria_id?.toString() ||
           producto.categoriaId?.toString() ||
@@ -83,7 +89,7 @@ export default function EditProductoDialog({
           producto.stockMinimo?.toString() ||
           '10',
         imagen: producto.imagen || '',
-        estado: producto.estado,
+        estado: producto.estado || 'activo',
       });
     }
   }, [producto]);
@@ -94,13 +100,15 @@ export default function EditProductoDialog({
 
     setLoading(true);
     try {
-      await onSubmit(producto.id, {
+      // Enviamos el ID siempre como string para consistencia en onSubmit
+      await onSubmit(producto.id.toString(), {
         nombre: formData.nombre,
         descripcion: formData.descripcion || undefined,
         precio: parseFloat(formData.precio),
-        categoriaId: formData.categoriaId,
-        stock: parseInt(formData.stock),
-        stockMinimo: parseInt(formData.stockMinimo),
+        // Convertimos a número para la API si es necesario
+        categoria_id: Number(formData.categoriaId), 
+        stock: parseInt(formData.stock) || 0,
+        stock_minimo: parseInt(formData.stockMinimo) || 0,
         imagen: formData.imagen || null,
         estado: formData.estado,
       });
@@ -123,6 +131,7 @@ export default function EditProductoDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Nombre */}
           <div className="space-y-2">
             <Label htmlFor="nombre">Nombre del Producto *</Label>
             <Input
@@ -136,6 +145,7 @@ export default function EditProductoDialog({
             />
           </div>
 
+          {/* Descripción */}
           <div className="space-y-2">
             <Label htmlFor="descripcion">Descripción</Label>
             <Textarea
@@ -149,6 +159,7 @@ export default function EditProductoDialog({
             />
           </div>
 
+          {/* Precio y Categoría */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="precio">Precio (S/) *</Label>
@@ -175,11 +186,11 @@ export default function EditProductoDialog({
                 disabled={loading}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecciona..." />
                 </SelectTrigger>
                 <SelectContent>
                   {categorias.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.nombre}
                     </SelectItem>
                   ))}
@@ -188,6 +199,7 @@ export default function EditProductoDialog({
             </div>
           </div>
 
+          {/* Stock */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="stock">Stock</Label>
@@ -200,7 +212,6 @@ export default function EditProductoDialog({
                 }
                 disabled={loading}
               />
-              <p className="text-sm text-gray-500">Cantidad disponible</p>
             </div>
 
             <div className="space-y-2">
@@ -214,10 +225,10 @@ export default function EditProductoDialog({
                 }
                 disabled={loading}
               />
-              <p className="text-sm text-gray-500">Alerta de reposición</p>
             </div>
           </div>
 
+          {/* Imagen */}
           <div className="space-y-2">
             <Label htmlFor="imagen">URL de Imagen</Label>
             <Input
@@ -228,9 +239,11 @@ export default function EditProductoDialog({
                 setFormData({ ...formData, imagen: e.target.value })
               }
               disabled={loading}
+              placeholder="https://..."
             />
           </div>
 
+          {/* Estado */}
           <div className="space-y-2">
             <Label htmlFor="estado">Estado</Label>
             <Select

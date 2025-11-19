@@ -21,6 +21,8 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
+    console.log("🔐 [LOGIN] Iniciando login para:", email);
+
     try {
       // 1. Login con Supabase Auth
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
@@ -28,34 +30,56 @@ export default function LoginPage() {
         password,
       });
 
+      console.log("📝 [LOGIN] Resultado de signInWithPassword:", {
+        success: !!data.user,
+        userId: data.user?.id,
+        hasSession: !!data.session,
+        error: loginError?.message
+      });
+
       if (loginError) {
+        console.error("❌ [LOGIN] Error de autenticación:", loginError);
         setError("Credenciales inválidas. Por favor, intenta de nuevo.");
         setIsLoading(false);
         return;
       }
 
       if (!data.user) {
+        console.error("❌ [LOGIN] No se obtuvo usuario");
         setError("Error al iniciar sesión.");
         setIsLoading(false);
         return;
       }
 
+      console.log("✅ [LOGIN] Autenticación exitosa, verificando datos...");
+
       // 2. Obtener datos adicionales del usuario
       const usuario = await getUsuarioCompleto();
 
+      console.log("👤 [LOGIN] Usuario completo:", {
+        encontrado: !!usuario,
+        id: usuario?.id,
+        estado: usuario?.estado,
+        rol: usuario?.rol
+      });
+
       if (!usuario) {
+        console.error("❌ [LOGIN] No se encontró usuario en BD");
         setError("Error obteniendo datos del usuario.");
         setIsLoading(false);
         return;
       }
 
       // 3. Verificar que el usuario esté activo
-      if (usuario.estado !== 'activo') {
+      if (usuario.estado?.toLowerCase() !== 'activo') {
+        console.error("❌ [LOGIN] Usuario inactivo");
         await supabase.auth.signOut();
         setError("Tu cuenta está inactiva. Contacta al administrador.");
         setIsLoading(false);
         return;
       }
+
+      console.log("✅ [LOGIN] Usuario activo, actualizando último acceso...");
 
       // 4. Actualizar último acceso
       await supabase
@@ -63,14 +87,20 @@ export default function LoginPage() {
         .update({ ultimo_acceso: new Date().toISOString() })
         .eq('id', usuario.id);
 
-      // 5. Redirigir al dashboard
-      router.push("/Panel-Administrativo/dashboard");
-      router.refresh();
+      console.log("🚀 [LOGIN] Redirigiendo al dashboard...");
+
+      // 5. Esperar un momento para asegurar que las cookies estén completamente sincronizadas
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // 6. Redirigir al dashboard - usar window.location para forzar recarga
+      window.location.href = "/Panel-Administrativo/dashboard";
+      
+      // 7. Detener cualquier ejecución adicional
+      return;
 
     } catch (error) {
-      console.error("Error en login:", error);
+      console.error("💥 [LOGIN] Error inesperado:", error);
       setError("Ocurrió un error. Por favor, intenta de nuevo.");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -172,6 +202,7 @@ export default function LoginPage() {
                 </div>
               </div>
             </div>
+
           </CardContent>
         </Card>
 

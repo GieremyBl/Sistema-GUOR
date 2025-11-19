@@ -1,4 +1,3 @@
-"use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Scissors, Clock, CheckCircle, AlertCircle } from "lucide-react";

@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import DashboardAdmin from '@/components/dashboards/DashboardAdmin';
 import DashboardRecepcionista from '@/components/dashboards/DashboardRecepcionista';
@@ -8,12 +9,47 @@ import DashboardAyudante from '@/components/dashboards/DashboardAyudante';
 import DashboardRepresentante from '@/components/dashboards/DashboardRepresentante';
 
 export default async function DashboardPage() {
-  let supabase = getSupabaseAdminClient(); 
+  const cookieStore = await cookies();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  // Usar el cliente SSR que SÍ tiene acceso a las cookies de sesión
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // setAll puede fallar en algunos casos, pero getAll siempre funciona
+          }
+        },
+      },
+    }
+  );
+
+  console.log('[DASHBOARD SERVER] Verificando autenticación...');
+
+  // Obtener el usuario autenticado
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  console.log('[DASHBOARD SERVER]', {
+    userFound: !!user,
+    userId: user?.id,
+    authError: authError?.message,
+  });
 
   // Si no hay usuario autenticado, redirigir al login
   if (!user || authError) {
+    console.error('[DASHBOARD SERVER] No autenticado, redirigiendo a login');
     redirect('/login');
   }
 
@@ -24,16 +60,26 @@ export default async function DashboardPage() {
     .eq('auth_id', user.id)
     .single();
 
+  console.log('[DASHBOARD SERVER]', {
+    usuarioEncontrado: !!usuario,
+    rol: usuario?.rol,
+    estado: usuario?.estado,
+    usuarioError: usuarioError?.message,
+  });
+
   // Si no existe el usuario en la BD
   if (!usuario || usuarioError) {
-    console.error('[DASHBOARD] Error al obtener usuario:', usuarioError);
+    console.error('[DASHBOARD SERVER] Error al obtener usuario:', usuarioError);
     redirect('/login?error=usuario_no_encontrado');
   }
 
   // Validar que el usuario esté activo
   if (usuario.estado?.toLowerCase() !== 'activo') {
+    console.error('[DASHBOARD SERVER] Usuario inactivo');
     redirect('/login?error=cuenta_inactiva');
   }
+
+  console.log('[DASHBOARD SERVER] ✅ Usuario autenticado y activo, renderizando dashboard...');
 
   // Normalizar el rol a minúsculas para comparación
   const rol = usuario.rol?.toLowerCase();
@@ -42,24 +88,24 @@ export default async function DashboardPage() {
   switch (rol) {
     case 'administrador':
       return <DashboardAdmin usuario={usuario} />;
-    
+
     case 'recepcionista':
       return <DashboardRecepcionista usuario={usuario} />;
-    
+
     case 'diseñador':
       return <DashboardDiseñador usuario={usuario} />;
-    
+
     case 'cortador':
       return <DashboardCortador usuario={usuario} />;
-    
+
     case 'ayudante':
       return <DashboardAyudante usuario={usuario} />;
-    
+
     case 'representante_taller':
       return <DashboardRepresentante usuario={usuario} />;
-    
+
     default:
-      console.error('[DASHBOARD] Rol no reconocido:', usuario.rol);
+      console.error('[DASHBOARD SERVER] Rol no reconocido:', usuario.rol);
       return (
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">

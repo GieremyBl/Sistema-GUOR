@@ -63,7 +63,7 @@ export default function CategoriasPage() {
       // Convertir undefined a null para que coincida con CategoriaCreateData
       const categoriaData: CategoriaCreateData & { activo: boolean } = {
         nombre: data.nombre,
-        descripcion: data.descripcion ?? null,
+        descripcion: data.descripcion || undefined,
         activo: data.activo,
       };
 

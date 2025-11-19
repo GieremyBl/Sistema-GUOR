@@ -1,15 +1,14 @@
 'use server';
 import { createClient } from '@supabase/supabase-js';
-import { get } from 'http';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_UR!;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function getSupabaseAdminClient() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Variables SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no definidas para el cliente Admin.');
    }
-    // 🚨 ESTO ES CORRECTO: Usa el cliente base de Supabase con la clave Admin.
+ 
     return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
 export type Producto = {
@@ -274,5 +273,40 @@ export async function getProductosStockBajo() {
   } catch (error: any) {
     console.error('Error al obtener productos con stock bajo:', error);
     return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Obtener productos disponibles (activos y con stock)
+ * Útil para seleccionar productos al crear pedidos
+ */
+export async function getProductosDisponibles() {
+  try {
+    const supabase = getSupabaseAdminClient();
+    
+    const { data, error } = await supabase
+      .from('productos')
+      .select(`
+        id,
+        nombre,
+        descripcion,
+        precio,
+        stock,
+        imagen,
+        categoria:categorias (
+          id,
+          nombre
+        )
+      `)
+      .eq('estado', 'activo')
+      .gt('stock', 0)
+      .order('nombre', { ascending: true });
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error: any) {
+    console.error('Error al obtener productos disponibles:', error);
+    return { success: false, error: error.message, data: [] };
   }
 }

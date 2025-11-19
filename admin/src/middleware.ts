@@ -18,7 +18,12 @@ const routePermissions: Record<string, string[]> = {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Rutas públicas
+  // Ignorar rutas de Chrome DevTools y similares
+  if (pathname.startsWith('/.well-known')) {
+    return new NextResponse(null, { status: 404 });
+  }
+  
+  // Rutas públicas que no requieren autenticación
   const publicPaths = ['/login', '/acceso-denegado', '/auth/signout'];
   if (publicPaths.includes(pathname)) {
     return NextResponse.next();
@@ -37,86 +42,119 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({
-            request,
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
           });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) => {
+            supabaseResponse.cookies.set(name, value, options);
+          });
         },
       },
     }
   );
 
-  // Usar getUser() en lugar de getSession() (más seguro)
+  // Usar getUser() para verificación segura
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
-  // Log para debugging (quitar en producción)
-  console.log('[MIDDLEWARE]', {
+  console.log('[MIDDLEWARE] Estado inicial:', {
     pathname,
     hasUser: !!user,
+    userId: user?.id,
     authError: authError?.message
   });
 
+  // Si hay error de autenticación, redirigir a login
+  if (authError) {
+    console.error('[MIDDLEWARE] ❌ Error de autenticación:', authError.message);
+    
+    if (pathname.startsWith('/Panel-Administrativo')) {
+      const url = new URL('/login', request.url);
+      url.searchParams.set('error', 'sesion_invalida');
+      return NextResponse.redirect(url);
+    }
+    
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
+
   // Ruta raíz
   if (pathname === '/') {
-    const url = request.nextUrl.clone();
-    url.pathname = user ? '/Panel-Administrativo/dashboard' : '/login';
-    return NextResponse.redirect(url);
+    if (!user) {
+      console.log('[MIDDLEWARE] 🔄 Ruta raíz sin usuario -> login');
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    console.log('[MIDDLEWARE] 🔄 Ruta raíz con usuario -> dashboard');
+    return NextResponse.redirect(new URL('/Panel-Administrativo/dashboard', request.url));
   }
 
   // Si no hay usuario y la ruta es protegida
   if (!user && pathname.startsWith('/Panel-Administrativo')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
+    console.log('[MIDDLEWARE] 🔄 Ruta protegida sin usuario -> login');
+    const url = new URL('/login', request.url);
     url.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(url);
   }
 
   // Si hay usuario intentando acceder al login
   if (user && pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/Panel-Administrativo/dashboard';
-    return NextResponse.redirect(url);
+    console.log('[MIDDLEWARE] 🔄 Usuario autenticado en /login -> dashboard');
+    // NO redirigir aquí, simplemente permitir que continúe
+    // El cliente manejará el redirect
+    return NextResponse.next();
   }
 
   // Verificar permisos en rutas protegidas
   if (user && pathname.startsWith('/Panel-Administrativo')) {
+    console.log('[MIDDLEWARE] 🔍 Verificando permisos para usuario:', user.id);
+    
     try {
       const { data: usuario, error } = await supabase
         .from('usuarios')
         .select('rol, estado')
         .eq('auth_id', user.id)
-        .single();
+        .maybeSingle();
 
-      // Si hay error o no existe el usuario
-      if (error || !usuario) {
-        console.error('[MIDDLEWARE] Usuario no encontrado:', error);
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        url.searchParams.set('error', 'usuario_no_encontrado');
-        
-        // Cerrar sesión si el usuario no existe en la BD
+      console.log('[MIDDLEWARE] 📊 Resultado consulta usuario:', {
+        encontrado: !!usuario,
+        rol: usuario?.rol,
+        estado: usuario?.estado,
+        error: error?.message
+      });
+
+      // Si hay error en la consulta
+      if (error) {
+        console.error('[MIDDLEWARE] ❌ Error al consultar usuario:', error.message);
+        const url = new URL('/login', request.url);
+        url.searchParams.set('error', 'error_sistema');
+        return NextResponse.redirect(url);
+      }
+
+      // Si no existe el usuario en la base de datos
+      if (!usuario) {
+        console.error('[MIDDLEWARE] ❌ Usuario autenticado pero NO existe en BD');
         await supabase.auth.signOut();
         
+        const url = new URL('/login', request.url);
+        url.searchParams.set('error', 'usuario_no_encontrado');
         return NextResponse.redirect(url);
       }
 
       // Validar estado activo
       if (usuario.estado?.toLowerCase() !== 'activo') {
-        console.log('[MIDDLEWARE] Usuario inactivo');
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        url.searchParams.set('error', 'cuenta_inactiva');
-        
+        console.error('[MIDDLEWARE] ❌ Usuario con estado:', usuario.estado);
         await supabase.auth.signOut();
         
+        const url = new URL('/login', request.url);
+        url.searchParams.set('error', 'cuenta_inactiva');
         return NextResponse.redirect(url);
       }
+
+      console.log('[MIDDLEWARE] ✅ Usuario válido y activo');
 
       // Validar permisos de rol (solo si no es el dashboard principal)
       if (pathname !== '/Panel-Administrativo/dashboard') {
@@ -124,7 +162,6 @@ export async function middleware(request: NextRequest) {
         let allowedRoles: string[] | undefined;
         let matchedRoute = '';
 
-        // Buscar la ruta más específica que coincida
         for (const route in routePermissions) {
           if (pathname === route || pathname.startsWith(route + '/')) {
             if (route.length > matchedRoute.length) {
@@ -134,30 +171,19 @@ export async function middleware(request: NextRequest) {
           }
         }
 
-        // Log para debugging
-        console.log('[MIDDLEWARE] Permisos:', {
-          pathname,
-          matchedRoute,
-          userRole,
-          allowedRoles
-        });
-
-        // Si la ruta requiere permisos y el usuario no los tiene
         if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
-          console.log('[MIDDLEWARE] Acceso denegado para rol:', userRole);
-          const url = request.nextUrl.clone();
-          url.pathname = '/acceso-denegado';
-          return NextResponse.redirect(url);
+          console.log('[MIDDLEWARE] ❌ Acceso denegado - Rol:', userRole, 'Ruta:', pathname);
+          return NextResponse.redirect(new URL('/acceso-denegado', request.url));
         }
       }
 
-      // Agregar el rol a los headers para usarlo en los componentes
       supabaseResponse.headers.set('x-user-role', usuario.rol);
+      console.log('[MIDDLEWARE] ✅ Permitiendo acceso a:', pathname);
       
     } catch (error) {
-      console.error('[MIDDLEWARE] Error en validación:', error);
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
+      console.error('[MIDDLEWARE] 💥 Error inesperado:', error);
+      const url = new URL('/login', request.url);
+      url.searchParams.set('error', 'error_sistema');
       return NextResponse.redirect(url);
     }
   }

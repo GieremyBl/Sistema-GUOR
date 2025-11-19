@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 // Asegúrate de que estas rutas de importación son correctas
 import { FetchPedidosParams, EstadoPedido, PrioridadPedido } from '@/app/types';
-import { getClientesActivos } from '@/lib/actions/clientes';
+import { searchClientes } from '@/lib/actions/clientes';
 import {
     Select,
     SelectContent,
@@ -33,10 +33,8 @@ export function PedidosFilters({ filters, onFilterChange, loading }: PedidosFilt
 
     const loadClientes = async () => {
         try {
-            const result = await getClientesActivos();
-            if (result.success) {
-                setClientes(result.data || []);
-            }
+            const result = await searchClientes('');
+            setClientes(result || []);
         } catch (error) {
             console.error('Error loading clientes:', error);
         }
@@ -142,7 +140,7 @@ export function PedidosFilters({ filters, onFilterChange, loading }: PedidosFilt
                                     // FIX: Usamos la variable pre-calculada que es de tipo string
                                     value={selectedClienteValue}
                                     onValueChange={(value) =>
-                                        onFilterChange({ cliente_id: value === 'all' ? undefined : Number(value) })
+                                        onFilterChange({ cliente_id: value === 'all' ? undefined : value })
                                     }
                                     disabled={loading}
                                 >

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { updatePedido } from '@/lib/actions/pedidos';
-import { getClientesActivos } from '@/lib/actions/clientes';
+import { fetchClientesActivos } from '@/lib/actions/clientes';
 import { Pedido, EstadoPedido, PrioridadPedido } from '@/app/types';
 import {
   Dialog,
@@ -92,10 +92,8 @@ export function EditPedidoDialog({
   const loadClientes = async () => {
     setLoadingData(true);
     try {
-      const result = await getClientesActivos();
-      if (result.success) {
-        setClientes(result.data || []);
-      }
+      const result = await fetchClientesActivos();
+      setClientes(result || []);
     } catch (error) {
       console.error('Error loading clientes:', error);
     } finally {

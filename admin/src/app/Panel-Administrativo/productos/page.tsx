@@ -29,7 +29,7 @@ import {
   fetchProductos,
   fetchCategorias,
   deleteProducto,
-  ProductoApi,
+  Producto,
   Categoria,
 } from '@/lib/api';
 
@@ -52,11 +52,11 @@ type ProductoTransformado = {
 export default function ProductosPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [productos, setProductos] = useState<ProductoApi[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
-  const [productoToDelete, setProductoToDelete] = useState<ProductoApi | null>(null);
-  const [productoToStock, setProductoToStock] = useState<ProductoApi | null>(null);
+  const [productoToDelete, setProductoToDelete] = useState<Producto | null>(null);
+  const [productoToStock, setProductoToStock] = useState<Producto | null>(null);
 
   // Filtros
   const [busqueda, setBusqueda] = useState('');
@@ -188,9 +188,9 @@ export default function ProductosPage() {
   };
 
   const limpiarFiltros = () => {
-    setBusqueda('');
-    setEstadoFiltro('');
-    setCategoriaFiltro('');
+    setBusqueda('all');
+    setEstadoFiltro('all');
+    setCategoriaFiltro('all');
     setShowStockBajo(false);
     setPage(1);
   };
@@ -202,10 +202,10 @@ export default function ProductosPage() {
       producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       producto.descripcion?.toLowerCase().includes(busqueda.toLowerCase());
 
-    const matchEstado = !estadoFiltro || producto.estado === estadoFiltro;
+    const matchEstado = !estadoFiltro || estadoFiltro === 'all' || producto.estado === estadoFiltro;
 
     const matchCategoria =
-      !categoriaFiltro || producto.categoria_id.toString() === categoriaFiltro;
+      !categoriaFiltro || categoriaFiltro === 'all' || producto.categoria_id.toString() === categoriaFiltro;
 
     const matchStockBajo = !showStockBajo || producto.stock <= producto.stock_minimo;
 
@@ -232,10 +232,10 @@ export default function ProductosPage() {
     categoria_id: p.categoria_id,
     created_at: p.created_at,
     updated_at: p.updated_at ?? undefined, // ← Convertir null a undefined
-    categoria: {
-      id: p.categoria.id.toString(),
+    categoria: p.categoria ? {
+      id: p.categoria_id.toString(),
       nombre: p.categoria.nombre,
-    },
+    } : undefined,
   }));
 
   return (
@@ -280,7 +280,7 @@ export default function ProductosPage() {
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos los estados</SelectItem>
+            <SelectItem value="all">Todos los estados</SelectItem>
             <SelectItem value="activo">Activo</SelectItem>
             <SelectItem value="inactivo">Inactivo</SelectItem>
           </SelectContent>
@@ -297,7 +297,7 @@ export default function ProductosPage() {
             <SelectValue placeholder="Categoría" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas las categorías</SelectItem>
+            <SelectItem value="all">Todas las categorías</SelectItem>
             {categorias.map((cat) => (
               <SelectItem key={cat.id} value={cat.id.toString()}>
                 {cat.nombre}

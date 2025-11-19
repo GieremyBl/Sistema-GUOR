@@ -3,14 +3,13 @@
 import { createClient } from '@supabase/supabase-js';;
 import { revalidatePath } from 'next/cache';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_UR!;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function getSupabaseAdminClient() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Variables SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no definidas para el cliente Admin.');
    }
-    // 🚨 ESTO ES CORRECTO: Usa el cliente base de Supabase con la clave Admin.
     return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
 // --- Tipos y Definiciones (Basados en tu api.ts) ---
@@ -90,15 +89,8 @@ export async function getPedidos(params: FetchPedidosParams = {}) {
     if (fecha_desde) query = query.gte('fecha_pedido', fecha_desde);
     if (fecha_hasta) query = query.lte('fecha_pedido', fecha_hasta);
 
-    // Filtro de búsqueda (Buscando por datos del cliente relacionado)
-    // Nota: Supabase permite filtrar relaciones anidadas, pero a veces es complejo.
-    // Aquí asumimos búsqueda por ID de pedido o filtrado simple.
     if (busqueda) {
-      // Para buscar por nombre de cliente dentro de pedidos se requiere un enfoque diferente 
-      // o usar la función de búsqueda de texto completo si está configurada.
-      // Por ahora buscamos si el texto coincide con el ID del pedido (si es UUID es difícil)
-      // o implementamos lógica específica.
-      // Ejemplo simple: query = query.ilike('id::text', `%${busqueda}%`);
+      query = query.ilike('cliente.razon_social', `%${busqueda}%`);
     }
 
     // Ordenamiento y Paginación

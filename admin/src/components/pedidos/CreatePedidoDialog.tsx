@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { createPedido } from '@/lib/actions/pedidos';
-import { getClientesActivos } from '@/lib/actions/clientes';
+import { fetchClientesActivos } from '@/lib/actions/clientes';
 import { getProductosDisponibles } from '@/lib/actions/productos';
 import {
   Dialog,
@@ -84,16 +84,24 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
     }
   }, [open]);
 
-  const loadInitialData = async () => {
+    const loadInitialData = async () => {
     setLoadingData(true);
     try {
       const [clientesRes, productosRes] = await Promise.all([
-        getClientesActivos(),
+        fetchClientesActivos(),
         getProductosDisponibles(),
       ]);
 
-      if (clientesRes.success) setClientes(clientesRes.data || []);
-      if (productosRes.success) setProductos(productosRes.data || []);
+      // fetchClientesActivos devuelve directamente Cliente[]
+      setClientes(clientesRes || []);
+
+      // getProductosDisponibles devuelve { success, data }
+      if (productosRes.success) {
+        setProductos(productosRes.data || []);
+      } else {
+        console.error('Error cargando productos:', productosRes.error);
+        setProductos([]);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
