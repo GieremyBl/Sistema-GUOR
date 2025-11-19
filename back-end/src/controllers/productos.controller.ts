@@ -121,21 +121,65 @@ export const createProducto = async (req: Request, res: Response) => {
             precio,
             stock,
             stock_minimo,
-            imagen
+            imagen,
+            estado
         } = req.body;
 
-        // ... Validaciones (Nombre, Categoría, Precio positivo) ...
+        // Validaciones básicas
+        if (!nombre || nombre.trim() === '') {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'El nombre del producto es obligatorio' 
+            });
+        }
 
-        // Verificar que la categoría existe (Optimización: se podría hacer en una sola RPC)
-        const { data: categoria } = await supabase
+        if (!categoria_id) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'La categoría es obligatoria' 
+            });
+        }
+
+        if (!precio || parseFloat(precio) <= 0) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'El precio debe ser mayor a 0' 
+            });
+        }
+
+        // ✅ CORRECCIÓN: Verificar que la categoría existe y manejar el error correctamente
+        const { data: categoria, error: categoriaError } = await supabase
             .from('categorias')
-            .select('id')
-            .eq('id', categoria_id)
-            .single();
+            .select('id, activo')
+            .eq('id', parseInt(categoria_id))
+            .maybeSingle(); // ✅ Usar maybeSingle() en lugar de single()
+
+        // Verificar si hay error o si no se encontró la categoría
+        if (categoriaError) {
+            console.error('Error verificando categoría:', categoriaError);
+            return res.status(500).json({ 
+                success: false, 
+                error: 'Error al verificar la categoría' 
+            });
+        }
 
         if (!categoria) {
-            return res.status(400).json({ success: false, error: 'La categoría especificada no existe' });
+            console.log(`❌ Categoría ${categoria_id} no encontrada`);
+            return res.status(400).json({ 
+                success: false, 
+                error: 'La categoría especificada no existe' 
+            });
         }
+
+        // Opcional: Verificar que la categoría esté activa
+        if (!categoria.activo) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'La categoría seleccionada está inactiva' 
+            });
+        }
+
+        console.log('✅ Categoría válida:', categoria);
 
         // Crear el producto
         const { data: producto, error } = await supabase
@@ -148,7 +192,7 @@ export const createProducto = async (req: Request, res: Response) => {
                 stock: stock !== undefined ? parseInt(stock) : 0,
                 stock_minimo: stock_minimo !== undefined ? parseInt(stock_minimo) : 10,
                 imagen: imagen || null,
-                estado: 'activo' as EstadoProducto // Usando el campo 'estado'
+                estado: (estado as EstadoProducto) || ('activo' as EstadoProducto)
             })
             .select(`
                 *,
@@ -158,8 +202,13 @@ export const createProducto = async (req: Request, res: Response) => {
 
         if (error) {
             console.error('Error creando producto:', error);
-            return res.status(400).json({ success: false, error: error.message });
+            return res.status(400).json({ 
+                success: false, 
+                error: error.message 
+            });
         }
+
+        console.log('✅ Producto creado exitosamente:', producto);
 
         return res.status(201).json({
             success: true,
@@ -168,7 +217,10 @@ export const createProducto = async (req: Request, res: Response) => {
         });
     } catch (error: any) {
         console.error('Error en createProducto:', error);
-        return res.status(500).json({ success: false, error: 'Error interno del servidor' });
+        return res.status(500).json({ 
+            success: false, 
+            error: 'Error interno del servidor' 
+        });
     }
 };
 
