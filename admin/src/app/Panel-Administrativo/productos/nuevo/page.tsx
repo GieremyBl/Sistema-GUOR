@@ -4,7 +4,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-// 1. CAMBIO: Importamos el Formulario, no el Dialog
 import CreateProductoForm from '@/components/productos/CreateProductoDialog'; 
 import { useToast } from '@/app/hooks/use-toast';
 import { createProducto, fetchCategorias, Categoria } from '@/lib/api';
@@ -37,20 +36,32 @@ export default function NuevoProductoPage() {
     }
   };
 
-  // 2. CAMBIO: Manejo de datos simplificado
   const handleSubmit = async (data: any) => {
     try {
+      // 🔍 DEBUG: Ver qué llega
+      console.log('📥 Datos recibidos en handleSubmit:', data);
+      console.log('📋 categoriaId:', data.categoriaId);
+
+      // ✅ VALIDACIÓN: Asegurarse que categoriaId existe
+      if (!data.categoria_id) {
+        throw new Error('La categoría es obligatoria');
+      }
+
       // Mapeamos los datos del formulario a lo que espera tu API (Snake Case)
-      await createProducto({
+      const productoData = {
         nombre: data.nombre,
-        descripcion: data.descripcion,
-        precio: data.precio,
-        categoria_id: Number(data.categoriaId),
-        stock: data.stock,
-        stock_minimo: data.stockMinimo,
-        imagen: data.imagen,
+        descripcion: data.descripcion || null,
+        precio: parseFloat(data.precio),
+        categoria_id: data.categoria_id,
+        stock: parseInt(data.stock) || 0,
+        stock_minimo: parseInt(data.stockMinimo) || 400, 
+        imagen: data.imagen || null,
         estado: data.estado, 
-      });
+      };
+
+      console.log('📤 Datos a enviar a la API:', productoData);
+
+      await createProducto(productoData);
 
       toast({
         title: 'Éxito',
@@ -61,13 +72,10 @@ export default function NuevoProductoPage() {
       router.push('/Panel-Administrativo/productos');
       router.refresh(); 
     } catch (error: any) {
-      console.error('Error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo crear el producto',
-      });
-      // No relanzamos el error para que el formulario no explote, solo mostramos el toast
+      console.error('❌ Error en handleSubmit:', error);
+      
+      // Re-lanzar el error para que el formulario lo capture
+      throw error;
     }
   };
 
@@ -97,7 +105,6 @@ export default function NuevoProductoPage() {
         </div>
       </div>
 
-      {/* 3. CAMBIO: Renderizamos el formulario directamente (sin Dialog/Open props) */}
       {loading ? (
         <div className="flex justify-center py-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>

@@ -44,9 +44,9 @@ export default function CreateProductoForm({
     nombre: '',
     descripcion: '',
     precio: '',
-    categoriaId: '',
+    categoria_id: '',
     stock: '0',
-    stockMinimo: '10',
+    stockMinimo: '400',
     estado: 'activo',
   });
 
@@ -89,6 +89,19 @@ export default function CreateProductoForm({
     setError(null);
 
     try {
+      if (!formData.categoria_id) {
+        setError('La categoría es obligatoria');
+        setLoading(false);
+        return;
+      }
+
+      // Validación adicional del precio
+      if (!formData.precio || parseFloat(formData.precio) <= 0) {
+        setError('El precio debe ser mayor a 0');
+        setLoading(false);
+        return;
+      }
+
       let imagenUrl = '';
 
       // 1. Lógica de Subida de Imagen a Supabase
@@ -97,7 +110,7 @@ export default function CreateProductoForm({
         
         const fileExt = imagenFile.name.split('.').pop()?.toLowerCase();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = fileName; // Sin carpetas, directo en la raíz del bucket
+        const filePath = fileName;
 
         // Subir al bucket 'productos'
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -128,9 +141,9 @@ export default function CreateProductoForm({
         nombre: formData.nombre,
         descripcion: formData.descripcion || undefined,
         precio: parseFloat(formData.precio),
-        categoria_id: formData.categoriaId, // Nota: cambié a categoria_id (snake_case)
+        categoria_id: parseInt(formData.categoria_id),
         stock: parseInt(formData.stock) || 0,
-        stock_minimo: parseInt(formData.stockMinimo) || 10, // snake_case
+        stock_minimo: parseInt(formData.stockMinimo) || 400,
         imagen: imagenUrl || undefined,
         estado: formData.estado,
       });
@@ -140,7 +153,6 @@ export default function CreateProductoForm({
         URL.revokeObjectURL(previewUrl);
       }
 
-      // El router.push o refresh lo maneja el componente padre o aquí si prefieres
     } catch (error: any) {
       console.error('Error en el formulario:', error);
       setError(error.message || 'Error al crear el producto');
@@ -212,12 +224,17 @@ export default function CreateProductoForm({
             <div className="space-y-2">
               <Label htmlFor="categoriaId">Categoría *</Label>
               <Select
-                value={formData.categoriaId}
-                onValueChange={(value) => setFormData({ ...formData, categoriaId: value })}
+                value={formData.categoria_id || ''}
+                onValueChange={(value) => {
+                  setFormData({ ...formData, categoria_id: value });
+                  // Limpiar error de categoría si existía
+                  if (error === 'La categoría es obligatoria') {
+                    setError(null);
+                  }
+                }}
                 disabled={loading}
-                required
               >
-                <SelectTrigger>
+                <SelectTrigger className={!formData.categoria_id && error === 'La categoría es obligatoria' ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Selecciona categoría" />
                 </SelectTrigger>
                 <SelectContent>

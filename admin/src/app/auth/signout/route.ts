@@ -4,7 +4,16 @@ import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
-  let supabase = getSupabaseAdminClient(); 
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!, // Clave de servicio para admin
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
   
   // Cerrar sesión en Supabase
   await supabase.auth.signOut();

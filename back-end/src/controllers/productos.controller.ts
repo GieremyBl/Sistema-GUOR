@@ -147,12 +147,11 @@ export const createProducto = async (req: Request, res: Response) => {
             });
         }
 
-        // ✅ CORRECCIÓN: Verificar que la categoría existe y manejar el error correctamente
         const { data: categoria, error: categoriaError } = await supabase
             .from('categorias')
             .select('id, activo')
             .eq('id', parseInt(categoria_id))
-            .maybeSingle(); // ✅ Usar maybeSingle() en lugar de single()
+            .maybeSingle(); 
 
         // Verificar si hay error o si no se encontró la categoría
         if (categoriaError) {
@@ -192,7 +191,9 @@ export const createProducto = async (req: Request, res: Response) => {
                 stock: stock !== undefined ? parseInt(stock) : 0,
                 stock_minimo: stock_minimo !== undefined ? parseInt(stock_minimo) : 10,
                 imagen: imagen || null,
-                estado: (estado as EstadoProducto) || ('activo' as EstadoProducto)
+                estado: (estado as EstadoProducto) || ('activo' as EstadoProducto),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             })
             .select(`
                 *,

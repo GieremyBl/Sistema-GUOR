@@ -77,7 +77,7 @@ export interface Producto {
   stock_minimo: number;
   estado: 'activo' | 'inactivo';
   created_at: string;
-  updated_at?: string;
+  updated_at: string;
   categoria?: { 
     id: number; 
     nombre: string; 
