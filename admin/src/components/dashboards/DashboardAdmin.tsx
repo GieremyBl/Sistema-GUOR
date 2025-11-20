@@ -1,5 +1,5 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card";
 import { Users, ShoppingCart, Package, DollarSign, AlertCircle } from "lucide-react";
 
 type Usuario = {

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import EditProductoDialog from '@/components/productos/EditProductoDialog';
-import { useToast } from '@/app/hooks/use-toast';
+import EditProductoDialog from '@/productos/EditProductoDialog';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import {
   getProducto,
@@ -12,7 +12,7 @@ import {
   Producto,
   Categoria,
   ProductoUpdateData,
-} from '@/lib/api';
+} from '@/api';
 
 export default function EditarProductoPage() {
   const router = useRouter();

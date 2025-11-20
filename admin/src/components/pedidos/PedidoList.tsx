@@ -2,15 +2,15 @@
 "use client";
 
 import { useState } from 'react';
-import { Pedido } from '@/app/types';
+import { Pedido } from '@types';
 import { PedidoCard } from './PedidoCard';
 import { CreatePedidoDialog } from './CreatePedidoDialog';
 import { EditPedidoDialog } from './EditPedidoDialog';
 import { DeletePedidoDialog } from './DeletePedidoDialog';
 import { PedidoDetailsDialog } from './PedidoDetailsDialog';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
-import { usePermissions } from '@/app/hooks/usePermissions';
+import { usePermissions } from'@/hooks/usePermissions';
 
 interface PedidosListProps {
   pedidos: Pedido[];

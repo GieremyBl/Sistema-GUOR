@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/ui/button";
+import { Input } from "@/ui/input";
+import { Card, CardContent } from "@/ui/card";
 import { 
   FileText, 
   CheckCircle, 
@@ -23,8 +23,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import NuevaCotizacionForm from "@/components/cotizaciones/NewPricesForm";
+} from "@/ui/dropdown-menu";
+import NuevaCotizacionForm from "@/cotizaciones/NewPricesForm";
 
 interface Cotizacion {
   id: string;

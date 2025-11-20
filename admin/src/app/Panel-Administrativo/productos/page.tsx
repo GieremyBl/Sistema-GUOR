@@ -1,20 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import ProductosTable from '@/components/productos/ProductosTable';
-import StockDialog from '@/components/productos/StockDialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import ProductosTable from '@/productos/ProductosTable';
+import StockDialog from '@/productos/StockDialog';
+import CreateProductoDialog from '@/productos/CreateProductoDialog';
+import EditProductoDialog from '@/productos/EditProductoDialog';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/ui/select';
 import { Plus, Search, Filter, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,16 +25,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/alert-dialog';
 import {
   fetchProductos,
   fetchCategorias,
   deleteProducto,
+  createProducto,
+  updateProducto,
   Producto,
   Categoria,
-} from '@/lib/api';
+} from '@/api';
 
-// Definir el tipo del producto transformado (debe coincidir con ProductosTable)
 type ProductoTransformado = {
   id: string;
   nombre: string;
@@ -50,13 +52,16 @@ type ProductoTransformado = {
 };
 
 export default function ProductosPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [productoToDelete, setProductoToDelete] = useState<Producto | null>(null);
   const [productoToStock, setProductoToStock] = useState<Producto | null>(null);
+
+  // Estados de diálogos
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [productoToEdit, setProductoToEdit] = useState<Producto | null>(null);
 
   // Filtros
   const [busqueda, setBusqueda] = useState('');
@@ -99,13 +104,55 @@ export default function ProductosPage() {
     }
   };
 
+  const handleCreate = async (data: any) => {
+    try {
+      await createProducto(data);
+      toast({
+        title: 'Éxito',
+        description: 'Producto creado correctamente',
+      });
+      setShowCreateDialog(false);
+      await loadProductos();
+    } catch (error: any) {
+      console.error('Error creando producto:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo crear el producto',
+      });
+      throw error;
+    }
+  };
+
   const handleEdit = (id: string) => {
-    router.push(`/Panel-Administrativo/productos/${id}`);
+    const producto = productos.find((p) => p.id.toString() === id);
+    if (producto) {
+      setProductoToEdit(producto);
+    }
+  };
+
+  const handleUpdate = async (id: string, data: any) => {
+    try {
+      await updateProducto(Number(id), data);
+      toast({
+        title: 'Éxito',
+        description: 'Producto actualizado correctamente',
+      });
+      setProductoToEdit(null);
+      await loadProductos();
+    } catch (error: any) {
+      console.error('Error actualizando producto:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo actualizar el producto',
+      });
+      throw error;
+    }
   };
 
   const handleDelete = (producto: ProductoTransformado) => {
-    // Buscar el producto original en la lista completa
-    const productoOriginal = productos.find(p => p.id.toString() === producto.id);
+    const productoOriginal = productos.find((p) => p.id.toString() === producto.id);
     if (productoOriginal) {
       setProductoToDelete(productoOriginal);
     }
@@ -116,12 +163,10 @@ export default function ProductosPage() {
 
     try {
       await deleteProducto(productoToDelete.id);
-
       toast({
         title: 'Éxito',
         description: 'Producto eliminado correctamente',
       });
-
       await loadProductos();
       setProductoToDelete(null);
     } catch (error: any) {
@@ -135,8 +180,7 @@ export default function ProductosPage() {
   };
 
   const handleManageStock = (producto: ProductoTransformado) => {
-    // Buscar el producto original en la lista completa
-    const productoOriginal = productos.find(p => p.id.toString() === producto.id);
+    const productoOriginal = productos.find((p) => p.id.toString() === producto.id);
     if (productoOriginal) {
       setProductoToStock(productoOriginal);
     }
@@ -148,7 +192,6 @@ export default function ProductosPage() {
     operacion: 'agregar' | 'reducir' | 'establecer'
   ) => {
     try {
-      // Calcular nuevo stock
       const producto = productos.find((p) => p.id.toString() === id);
       if (!producto) return;
 
@@ -161,7 +204,6 @@ export default function ProductosPage() {
         nuevoStock = cantidad;
       }
 
-      // Actualizar producto con nuevo stock
       const response = await fetch(`/api/productos/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -188,14 +230,13 @@ export default function ProductosPage() {
   };
 
   const limpiarFiltros = () => {
-    setBusqueda('all');
+    setBusqueda('');
     setEstadoFiltro('all');
     setCategoriaFiltro('all');
     setShowStockBajo(false);
     setPage(1);
   };
 
-  // Aplicar filtros
   let productosFiltrados = productos.filter((producto) => {
     const matchBusqueda =
       !busqueda ||
@@ -212,35 +253,34 @@ export default function ProductosPage() {
     return matchBusqueda && matchEstado && matchCategoria && matchStockBajo;
   });
 
-  // Paginación
   const total = productosFiltrados.length;
   const totalPages = Math.ceil(total / limit);
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
   const productosPaginados = productosFiltrados.slice(startIndex, endIndex);
 
-  // Transformar productos para el componente - CORREGIDO
   const productosTransformados: ProductoTransformado[] = productosPaginados.map((p) => ({
     id: p.id.toString(),
     nombre: p.nombre,
-    descripcion: p.descripcion ?? undefined, // ← Convertir null a undefined
+    descripcion: p.descripcion ?? undefined,
     precio: p.precio,
-    imagen: p.imagen ?? undefined, // ← Convertir null a undefined
+    imagen: p.imagen ?? undefined,
     stock: p.stock,
     stock_minimo: p.stock_minimo,
     estado: p.estado,
     categoria_id: p.categoria_id,
     created_at: p.created_at,
-    updated_at: p.updated_at ?? undefined, // ← Convertir null a undefined
-    categoria: p.categoria ? {
-      id: p.categoria_id.toString(),
-      nombre: p.categoria.nombre,
-    } : undefined,
+    updated_at: p.updated_at ?? undefined,
+    categoria: p.categoria
+      ? {
+          id: p.categoria_id.toString(),
+          nombre: p.categoria.nombre,
+        }
+      : undefined,
   }));
 
   return (
     <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Productos</h1>
@@ -248,13 +288,12 @@ export default function ProductosPage() {
             Administra el catálogo de productos ({total} total)
           </p>
         </div>
-        <Button onClick={() => router.push('/Panel-Administrativo/productos/nuevo')}>
+        <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nuevo Producto
         </Button>
       </div>
 
-      {/* Filtros */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -339,6 +378,23 @@ export default function ProductosPage() {
         }}
         onPageChange={setPage}
       />
+
+      {/* Diálogo de creación */}
+      <CreateProductoDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSubmit={handleCreate}
+      />
+
+      {/* Diálogo de edición */}
+      {productoToEdit && (
+        <EditProductoDialog
+          open={!!productoToEdit}
+          onOpenChange={(open) => !open && setProductoToEdit(null)}
+          producto={productoToEdit}
+          onSubmit={handleUpdate}
+        />
+      )}
 
       {/* Diálogo de Stock */}
       {productoToStock && (

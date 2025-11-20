@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/ui/button';
+import { Badge } from '@/ui/badge';
 import {
   Table,
   TableBody,
@@ -11,11 +11,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+} from '@/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
 import { ArrowLeft, Loader2, Package, User, Calendar, DollarSign } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
-import { getPedido, Pedido, EstadoPedido, PrioridadPedido } from '@/lib/api';
+import { useToast } from'@/hooks/use-toast';
+import { getPedido, Pedido, EstadoPedido, PrioridadPedido } from '@/api';
 import { format } from 'date-fns';
 
 export default function DetallePedidoPage() {

@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
-import type { Cliente, ClienteCreateInput, ClienteUpdateInput } from '@/lib/api';
+import type { Cliente, ClienteCreateInput, ClienteUpdateInput } from '@/api';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

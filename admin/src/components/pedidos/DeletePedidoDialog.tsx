@@ -2,8 +2,8 @@
 "use client";
 
 import { useState } from 'react';
-import { Pedido } from '@/app/types';
-import { deletePedido } from '@/lib/actions/pedidos';
+import { Pedido } from '@types';
+import { deletePedido } from '@/actions/pedidos';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,9 +13,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
+import { useToast } from'@/hooks/use-toast';
 
 interface DeletePedidoDialogProps {
   pedido: Pedido;

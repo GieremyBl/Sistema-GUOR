@@ -1,233 +1,192 @@
-import { Role, Permission } from '@/app/types';
+// src/lib/roles-config.ts
+
+export interface Permission {
+  id: string;
+  label: string;
+  description: string;
+}
 
 export interface RoleConfig {
-  role: Role;
-  nombre: string;
-  descripcion: string;
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
   color: string;
-  permissions: Permission[];
+  permissions: {
+    // Permisos de creación
+    create?: string[];
+    // Permisos de visualización
+    view?: string[];
+    // Permisos de edición
+    edit?: string[];
+    // Permisos de eliminación
+    delete?: string[];
+    // Permisos de exportación
+    export?: string[];
+  };
 }
 
-export const ROLES_CONFIG: Record<Role, RoleConfig> = {
-  [Role.ADMINISTRADOR]: {
-    role: Role.ADMINISTRADOR,
-    nombre: 'Administrador',
-    descripcion: 'Control total del sistema, gestión de usuarios y configuración',
-    color: 'bg-purple-500',
-    permissions: [
-      Permission.VIEW_USERS,
-      Permission.MANAGE_USERS,
-      Permission.VIEW_PRODUCTS,
-      Permission.MANAGE_PRODUCTS,
-      Permission.MANAGE_STOCK,
-      Permission.VIEW_CATEGORIES,
-      Permission.MANAGE_CATEGORIES,
-      Permission.VIEW_INVENTORY,
-      Permission.MANAGE_INVENTORY,
-      Permission.VIEW_REPORTS,
-      Permission.EXPORT_REPORTS,
-      Permission.VIEW_ORDERS,
-      Permission.CREATE_ORDERS,
-      Permission.EDIT_ORDERS,
-      Permission.DELETE_ORDERS,
-      Permission.CHANGE_ORDER_STATUS,
-      Permission.VIEW_QUOTES,
-      Permission.MANAGE_QUOTES,
-      Permission.VIEW_CLIENTS,
-      Permission.MANAGE_CLIENTS,
-      Permission.VIEW_WORKSHOPS,
-      Permission.MANAGE_WORKSHOPS,
-      Permission.VIEW_CONFECTIONS,
-      Permission.MANAGE_CONFECTIONS,
-      Permission.VIEW_DISPATCHES,
-      Permission.MANAGE_DISPATCHES,
-      Permission.VIEW_SETTINGS,
-      Permission.MANAGE_SETTINGS,
-    ],
+export const AVAILABLE_PERMISSIONS: Permission[] = [
+  // Gestión de usuarios
+  { id: 'usuarios.create', label: 'Crear usuarios', description: 'Crear nuevos usuarios del sistema' },
+  { id: 'usuarios.view', label: 'Ver usuarios', description: 'Visualizar lista de usuarios' },
+  { id: 'usuarios.edit', label: 'Editar usuarios', description: 'Modificar información de usuarios' },
+  { id: 'usuarios.delete', label: 'Eliminar usuarios', description: 'Eliminar usuarios del sistema' },
+  { id: 'usuarios.export', label: 'Exportar usuarios', description: 'Exportar datos de usuarios' },
+
+  // Gestión de clientes
+  { id: 'clientes.create', label: 'Crear clientes', description: 'Registrar nuevos clientes' },
+  { id: 'clientes.view', label: 'Ver clientes', description: 'Visualizar lista de clientes' },
+  { id: 'clientes.edit', label: 'Editar clientes', description: 'Modificar información de clientes' },
+  { id: 'clientes.delete', label: 'Eliminar clientes', description: 'Eliminar clientes' },
+  { id: 'clientes.export', label: 'Exportar clientes', description: 'Exportar datos de clientes' },
+
+  // Gestión de talleres
+  { id: 'talleres.create', label: 'Crear talleres', description: 'Registrar talleres externos' },
+  { id: 'talleres.view', label: 'Ver talleres', description: 'Visualizar lista de talleres' },
+  { id: 'talleres.edit', label: 'Editar talleres', description: 'Modificar información de talleres' },
+  { id: 'talleres.delete', label: 'Eliminar talleres', description: 'Eliminar talleres' },
+  { id: 'talleres.export', label: 'Exportar talleres', description: 'Exportar datos de talleres' },
+
+  // Productos (solo vista)
+  { id: 'productos.view', label: 'Ver productos', description: 'Visualizar catálogo de productos' },
+  { id: 'productos.export', label: 'Exportar productos', description: 'Exportar datos de productos' },
+
+  // Pedidos (solo vista)
+  { id: 'pedidos.view', label: 'Ver pedidos', description: 'Visualizar lista de pedidos' },
+  { id: 'pedidos.export', label: 'Exportar pedidos', description: 'Exportar datos de pedidos' },
+
+  // Cotizaciones (solo vista)
+  { id: 'cotizaciones.view', label: 'Ver cotizaciones', description: 'Visualizar lista de cotizaciones' },
+  { id: 'cotizaciones.export', label: 'Exportar cotizaciones', description: 'Exportar datos de cotizaciones' },
+
+  // Categorías (solo vista)
+  { id: 'categorias.view', label: 'Ver categorías', description: 'Visualizar lista de categorías' },
+  { id: 'categorias.export', label: 'Exportar categorías', description: 'Exportar datos de categorías' },
+
+  // Inventario (solo vista)
+  { id: 'inventario.view', label: 'Ver inventario', description: 'Visualizar inventario de productos' },
+  { id: 'inventario.export', label: 'Exportar inventario', description: 'Exportar datos de inventario' },
+
+  // Confecciones (solo vista)
+  { id: 'confecciones.view', label: 'Ver confecciones', description: 'Visualizar lista de confecciones' },
+  { id: 'confecciones.export', label: 'Exportar confecciones', description: 'Exportar datos de confecciones' },
+
+  // Despachos (solo vista)
+  { id: 'despachos.view', label: 'Ver despachos', description: 'Visualizar lista de despachos' },
+  { id: 'despachos.export', label: 'Exportar despachos', description: 'Exportar datos de despachos' },
+
+  // Reportes y estadísticas
+  { id: 'reportes.view', label: 'Ver reportes', description: 'Acceder a reportes y estadísticas' },
+  { id: 'reportes.export', label: 'Exportar reportes', description: 'Exportar reportes del sistema' },
+
+  // Configuración del sistema
+  { id: 'sistema.config', label: 'Configurar sistema', description: 'Acceso a configuración del sistema' },
+];
+
+export const ROLES_CONFIG: Record<string, RoleConfig> = {
+  administrador: {
+    id: 'administrador',
+    name: 'Administrador',
+    description: 'Acceso total a visualización y gestión de usuarios, clientes y talleres',
+    icon: '🔴',
+    color: 'red',
+    permissions: {
+      // Puede crear usuarios, clientes y talleres
+      create: ['usuarios.create', 'clientes.create', 'talleres.create'],
+      
+      // Puede ver todo
+      view: [
+        'usuarios.view',
+        'clientes.view',
+        'talleres.view',
+        'productos.view',
+        'pedidos.view',
+        'cotizaciones.view',
+        'categorias.view',
+        'inventario.view',
+        'confecciones.view',
+        'despachos.view',
+        'reportes.view',
+      ],
+      
+      // Puede editar usuarios, clientes y talleres
+      edit: ['usuarios.edit', 'clientes.edit', 'talleres.edit'],
+      
+      // Puede eliminar usuarios, clientes y talleres
+      delete: ['usuarios.delete', 'clientes.delete', 'talleres.delete'],
+      
+      // Puede exportar todo
+      export: [
+        'usuarios.export',
+        'clientes.export',
+        'talleres.export',
+        'productos.export',
+        'pedidos.export',
+        'cotizaciones.export',
+        'categorias.export',
+        'inventario.export',
+        'confecciones.export',
+        'despachos.export',
+        'reportes.export',
+      ],
+    },
   },
   
-  [Role.RECEPCIONISTA]: {
-    role: Role.RECEPCIONISTA,
-    nombre: 'Recepcionista',
-    descripcion: 'Atención al cliente, recepción de pedidos y ventas',
-    color: 'bg-blue-500',
-    permissions: [
-      Permission.VIEW_PRODUCTS,
-      Permission.VIEW_ORDERS,
-      Permission.CREATE_ORDERS,
-      Permission.EDIT_ORDERS,
-      Permission.CHANGE_ORDER_STATUS,
-      Permission.VIEW_QUOTES,
-      Permission.MANAGE_QUOTES,
-      Permission.VIEW_CLIENTS,
-      Permission.MANAGE_CLIENTS,
-      Permission.VIEW_INVENTORY,
-      Permission.VIEW_DISPATCHES,
-    ],
+  recepcionista: {
+    id: 'recepcionista',
+    name: 'Recepcionista',
+    description: 'Gestión de pedidos y clientes',
+    icon: '🔵',
+    color: 'blue',
+    permissions: {
+      create: ['pedidos.create', 'clientes.create'],
+      view: ['pedidos.view', 'clientes.view', 'inventario.view', 'productos.view'],
+      edit: ['pedidos.edit', 'clientes.edit'],
+      export: ['pedidos.export', 'clientes.export'],
+    },
   },
   
-  [Role.CORTADOR]: {
-    role: Role.CORTADOR,
-    nombre: 'Cortador',
-    descripcion: 'Gestión de corte de telas y registro de uso de materiales',
-    color: 'bg-orange-500',
-    permissions: [
-      Permission.VIEW_PRODUCTS,
-      Permission.VIEW_ORDERS,
-      Permission.VIEW_CONFECTIONS,
-      Permission.MANAGE_CONFECTIONS,
-      Permission.VIEW_INVENTORY,
-      Permission.MANAGE_INVENTORY,
-    ],
-  },
-  
-  [Role.DISENADOR]: {
-    role: Role.DISENADOR,
-    nombre: 'Diseñador',
-    descripcion: 'Creación y diseño de productos y patrones',
-    color: 'bg-pink-500',
-    permissions: [
-      Permission.VIEW_PRODUCTS,
-      Permission.MANAGE_PRODUCTS,
-      Permission.VIEW_ORDERS,
-      Permission.VIEW_CONFECTIONS,
-      Permission.MANAGE_CONFECTIONS,
-      Permission.VIEW_INVENTORY,
-    ],
-  },
-  
-  [Role.REPRESENTANTE_TALLER]: {
-    role: Role.REPRESENTANTE_TALLER,
-    nombre: 'Representante de Taller',
-    descripcion: 'Gestión de talleres externos y seguimiento de confecciones',
-    color: 'bg-indigo-500',
-    permissions: [
-      Permission.VIEW_PRODUCTS,
-      Permission.VIEW_ORDERS,
-      Permission.VIEW_CONFECTIONS,
-      Permission.VIEW_WORKSHOPS,
-      Permission.MANAGE_WORKSHOPS,
-      Permission.VIEW_REPORTS,
-    ],
-  },
-  
-  [Role.AYUDANTE]: {
-    role: Role.AYUDANTE,
-    nombre: 'Ayudante',
-    descripcion: 'Asistencia general en tareas de producción',
-    color: 'bg-gray-500',
-    permissions: [
-      Permission.VIEW_PRODUCTS,
-      Permission.VIEW_ORDERS,
-      Permission.VIEW_CONFECTIONS,
-      Permission.VIEW_INVENTORY,
-      Permission.VIEW_DISPATCHES,
-    ],
+  diseñador: {
+    id: 'diseñador',
+    name: 'Diseñador',
+    description: 'Gestión de diseños y patrones',
+    icon: '🟣',
+    color: 'purple',
+    permissions: {
+      create: ['productos.create'],
+      view: ['productos.view', 'pedidos.view'],
+      edit: ['productos.edit'],
+      export: ['productos.export'],
+    },
   },
 };
 
-// Categorías actualizadas
-export const PERMISSION_CATEGORIES = {
-  'Gestión de Usuarios': [
-    Permission.VIEW_USERS,
-    Permission.MANAGE_USERS,
-  ],
-  'Gestión de Productos': [
-    Permission.VIEW_PRODUCTS,
-    Permission.MANAGE_PRODUCTS,
-    Permission.MANAGE_STOCK,
-  ],
-  'Gestión de Categorías': [
-    Permission.VIEW_CATEGORIES,
-    Permission.MANAGE_CATEGORIES,
-  ],
-  'Gestión de Inventario': [
-    Permission.VIEW_INVENTORY,
-    Permission.MANAGE_INVENTORY,
-  ],
-  'Gestión de Pedidos': [
-    Permission.VIEW_ORDERS,
-    Permission.CREATE_ORDERS,
-    Permission.EDIT_ORDERS,
-    Permission.DELETE_ORDERS,
-    Permission.CHANGE_ORDER_STATUS,
-  ],
-  'Gestión de Cotizaciones': [
-    Permission.VIEW_QUOTES,
-    Permission.MANAGE_QUOTES,
-  ],
-  'Gestión de Clientes': [         
-    Permission.VIEW_CLIENTS,
-    Permission.MANAGE_CLIENTS,
-  ],
-  'Talleres Externos': [
-    Permission.VIEW_WORKSHOPS,
-    Permission.MANAGE_WORKSHOPS,
-  ],
-  'Confecciones': [
-    Permission.VIEW_CONFECTIONS,
-    Permission.MANAGE_CONFECTIONS,
-  ],
-  'Despacho de Pedidos': [
-    Permission.VIEW_DISPATCHES,
-    Permission.MANAGE_DISPATCHES,
-  ],
-  'Reportes': [
-    Permission.VIEW_REPORTS,
-    Permission.EXPORT_REPORTS,
-  ],
-  'Configuración': [
-    Permission.VIEW_SETTINGS,
-    Permission.MANAGE_SETTINGS,
-  ],
-};
-
-// Labels actualizados - Usa los mismos del types.ts
-export const PERMISSION_LABELS: Record<Permission, string> = {
-  [Permission.VIEW_USERS]: 'Ver Usuarios',
-  [Permission.MANAGE_USERS]: 'Gestionar Usuarios',
-  [Permission.VIEW_CLIENTS]: 'Ver Clientes',
-  [Permission.MANAGE_CLIENTS]: 'Gestionar Clientes',
-  [Permission.VIEW_ORDERS]: 'Ver Pedidos',
-  [Permission.CREATE_ORDERS]: 'Crear Pedidos',
-  [Permission.EDIT_ORDERS]: 'Editar Pedidos',
-  [Permission.DELETE_ORDERS]: 'Eliminar Pedidos',
-  [Permission.CHANGE_ORDER_STATUS]: 'Cambiar Estado de Pedidos',
-  [Permission.VIEW_PRODUCTS]: 'Ver Productos',
-  [Permission.MANAGE_PRODUCTS]: 'Gestionar Productos',
-  [Permission.MANAGE_STOCK]: 'Gestionar Stock',
-  [Permission.VIEW_CATEGORIES]: 'Ver Categorías',
-  [Permission.MANAGE_CATEGORIES]: 'Gestionar Categorías',
-  [Permission.VIEW_INVENTORY]: 'Ver Inventario',
-  [Permission.MANAGE_INVENTORY]: 'Gestionar Inventario',
-  [Permission.VIEW_CONFECTIONS]: 'Ver Confecciones',
-  [Permission.MANAGE_CONFECTIONS]: 'Gestionar Confecciones',
-  [Permission.VIEW_WORKSHOPS]: 'Ver Talleres',
-  [Permission.MANAGE_WORKSHOPS]: 'Gestionar Talleres',
-  [Permission.VIEW_QUOTES]: 'Ver Cotizaciones',
-  [Permission.MANAGE_QUOTES]: 'Gestionar Cotizaciones',
-  [Permission.VIEW_DISPATCHES]: 'Ver Despachos',
-  [Permission.MANAGE_DISPATCHES]: 'Gestionar Despachos',
-  [Permission.VIEW_REPORTS]: 'Ver Reportes',
-  [Permission.EXPORT_REPORTS]: 'Exportar Reportes',
-  [Permission.VIEW_SETTINGS]: 'Ver Configuración',
-  [Permission.MANAGE_SETTINGS]: 'Gestionar Configuración',
-};
-
-// Funciones de utilidad (sin cambios)
-export function hasPermission(role: Role, permission: Permission): boolean {
+// Función helper para verificar permisos
+export function hasPermission(
+  role: string,
+  action: 'create' | 'view' | 'edit' | 'delete' | 'export',
+  resource: string
+): boolean {
   const roleConfig = ROLES_CONFIG[role];
-  return roleConfig?.permissions.includes(permission) ?? false;
+  if (!roleConfig) return false;
+  
+  const permissionKey = `${resource}.${action}`;
+  const permissions = roleConfig.permissions[action] || [];
+  
+  return permissions.includes(permissionKey);
 }
 
-export function getRolePermissions(role: Role): Permission[] {
-  return ROLES_CONFIG[role]?.permissions ?? [];
-}
-
-export function getRoleConfig(role: Role): RoleConfig | undefined {
-  return ROLES_CONFIG[role];
-}
-
-export function getAllRoles(): RoleConfig[] {
-  return Object.values(ROLES_CONFIG);
+// Función para obtener todos los permisos de un rol
+export function getRolePermissions(role: string): string[] {
+  const roleConfig = ROLES_CONFIG[role];
+  if (!roleConfig) return [];
+  
+  return [
+    ...(roleConfig.permissions.create || []),
+    ...(roleConfig.permissions.view || []),
+    ...(roleConfig.permissions.edit || []),
+    ...(roleConfig.permissions.delete || []),
+    ...(roleConfig.permissions.export || []),
+  ];
 }

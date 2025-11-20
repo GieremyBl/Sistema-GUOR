@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { Label } from '@/ui/label';
+import { Textarea } from '@/ui/textarea';
+import { Switch } from '@/ui/switch';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { Cliente, ClienteUpdateInput } from '@/lib/api';
-import { toast } from '@/app/hooks/use-toast';
+import { Cliente, ClienteUpdateInput } from '@/api';
+import { toast } from'@/hooks/use-toast';
 
 // Funciones del API (ajústalas según tu implementación)
 async function getCliente(id: number): Promise<Cliente> {

@@ -1,17 +1,17 @@
 // admin/src/components/pedidos/PedidoDetailsDialog.tsx
 "use client";
 
-import { Pedido, ESTADO_PEDIDO_LABELS, ESTADO_PEDIDO_COLORS, PRIORIDAD_PEDIDO_LABELS, PRIORIDAD_PEDIDO_COLORS } from '@/app/types';
+import { Pedido, ESTADO_PEDIDO_LABELS, ESTADO_PEDIDO_COLORS, PRIORIDAD_PEDIDO_LABELS, PRIORIDAD_PEDIDO_COLORS } from '@types';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from '@/ui/dialog';
+import { Badge } from '@/ui/badge';
+import { Separator } from '@/ui/separator';
+import { ScrollArea } from '@/ui/scroll-area';
 import { 
   Package, 
   Calendar, 

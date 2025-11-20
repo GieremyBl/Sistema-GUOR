@@ -1,41 +1,49 @@
 'use client';
 
-import { useState, ChangeEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useState, ChangeEvent, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/ui/dialog';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { Label } from '@/ui/label';
+import { Textarea } from '@/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/ui/select';
 import { ImagePlus, X } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
 
-// Definición de Tipos
 interface Categoria {
-  id: string;
+  id: string | number;
   nombre: string;
 }
 
-interface CreateProductoFormProps {
-  categorias: Categoria[];
+interface CreateProductoDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSubmit: (data: any) => Promise<void>;
 }
 
-export default function CreateProductoForm({
-  categorias,
+export default function CreateProductoDialog({
+  open,
+  onOpenChange,
   onSubmit,
-}: CreateProductoFormProps) {
-  const router = useRouter();
+}: CreateProductoDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [categoriasLoading, setCategoriasLoading] = useState(false);
+
   // Estado para la imagen
   const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -46,11 +54,31 @@ export default function CreateProductoForm({
     precio: '',
     categoria_id: '',
     stock: '0',
-    stockMinimo: '400',
+    stock_minimo: '10',
     estado: 'activo',
   });
 
-  // Manejar selección de archivo del escritorio
+  // Cargar categorías cuando se abre el diálogo
+  useEffect(() => {
+    if (open && categorias.length === 0) {
+      loadCategorias();
+    }
+  }, [open]);
+
+  const loadCategorias = async () => {
+    setCategoriasLoading(true);
+    try {
+      const response = await fetch('/api/categorias');
+      const data = await response.json();
+      setCategorias(data);
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+      setError('Error al cargar las categorías');
+    } finally {
+      setCategoriasLoading(false);
+    }
+  };
+
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -76,26 +104,52 @@ export default function CreateProductoForm({
 
   const removeImage = () => {
     if (previewUrl) {
-      URL.revokeObjectURL(previewUrl); // Liberar memoria
+      URL.revokeObjectURL(previewUrl);
     }
     setImagenFile(null);
     setPreviewUrl(null);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      nombre: '',
+      descripcion: '',
+      precio: '',
+      categoria_id: '',
+      stock: '0',
+      stock_minimo: '10',
+      estado: 'activo',
+    });
+    removeImage();
     setError(null);
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      resetForm();
+    }
+    onOpenChange(newOpen);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    setLoading(true);
 
     try {
+      // Validaciones
+      if (!formData.nombre.trim()) {
+        setError('El nombre del producto es obligatorio');
+        setLoading(false);
+        return;
+      }
+
       if (!formData.categoria_id) {
         setError('La categoría es obligatoria');
         setLoading(false);
         return;
       }
 
-      // Validación adicional del precio
       if (!formData.precio || parseFloat(formData.precio) <= 0) {
         setError('El precio debe ser mayor a 0');
         setLoading(false);
@@ -104,10 +158,10 @@ export default function CreateProductoForm({
 
       let imagenUrl = '';
 
-      // 1. Lógica de Subida de Imagen a Supabase
+      // Lógica de Subida de Imagen a Supabase
       if (imagenFile) {
         console.log('Subiendo imagen...', imagenFile.name);
-        
+
         const fileExt = imagenFile.name.split('.').pop()?.toLowerCase();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = fileName;
@@ -117,7 +171,7 @@ export default function CreateProductoForm({
           .from('productos')
           .upload(filePath, imagenFile, {
             cacheControl: '3600',
-            upsert: false
+            upsert: false,
           });
 
         if (uploadError) {
@@ -136,23 +190,19 @@ export default function CreateProductoForm({
         console.log('URL pública generada:', imagenUrl);
       }
 
-      // 2. Enviar datos al padre (incluyendo la nueva URL de imagen)
+      // Enviar datos
       await onSubmit({
-        nombre: formData.nombre,
-        descripcion: formData.descripcion || undefined,
+        nombre: formData.nombre.trim(),
+        descripcion: formData.descripcion.trim() || undefined,
         precio: parseFloat(formData.precio),
-        categoria_id: parseInt(formData.categoria_id),
-        stock: parseInt(formData.stock) || 0,
-        stock_minimo: parseInt(formData.stockMinimo) || 400,
+        categoria_id: Number(formData.categoria_id),
+        stock: Math.max(0, parseInt(formData.stock) || 0),
+        stock_minimo: Math.max(0, parseInt(formData.stock_minimo) || 10),
         imagen: imagenUrl || undefined,
         estado: formData.estado,
       });
 
-      // Limpiar el preview después de enviar
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-
+      handleOpenChange(false);
     } catch (error: any) {
       console.error('Error en el formulario:', error);
       setError(error.message || 'Error al crear el producto');
@@ -162,57 +212,58 @@ export default function CreateProductoForm({
   };
 
   return (
-    <Card className="w-full bg-white shadow-sm border border-gray-200">
-      <CardHeader>
-        <CardTitle className="text-2xl text-gray-800">Crear Nuevo Producto</CardTitle>
-      </CardHeader>
-      
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
-          
-          {/* Mostrar errores */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Crear Nuevo Producto</DialogTitle>
+          <DialogDescription>
+            Completa el formulario para agregar un nuevo producto al catálogo
+          </DialogDescription>
+        </DialogHeader>
 
-          {/* Sección: Nombre y Descripción */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="nombre">Nombre del Producto *</Label>
-              <Input
-                id="nombre"
-                placeholder="Ej: Polo Clásico Algodón"
-                value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                required
-                disabled={loading}
-              />
-            </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+            {error}
+          </div>
+        )}
 
-            <div className="space-y-2">
-              <Label htmlFor="descripcion">Descripción</Label>
-              <Textarea
-                id="descripcion"
-                placeholder="Detalles del producto..."
-                value={formData.descripcion}
-                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                rows={3}
-                disabled={loading}
-                className="resize-none"
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Nombre */}
+          <div className="space-y-2">
+            <Label htmlFor="nombre">Nombre del Producto *</Label>
+            <Input
+              id="nombre"
+              placeholder="Ej: Polo Clásico Algodón"
+              value={formData.nombre}
+              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              required
+              disabled={loading}
+            />
           </div>
 
-          {/* Sección: Precios y Categoría */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Descripción */}
+          <div className="space-y-2">
+            <Label htmlFor="descripcion">Descripción</Label>
+            <Textarea
+              id="descripcion"
+              placeholder="Detalles del producto..."
+              value={formData.descripcion}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              rows={3}
+              disabled={loading}
+              className="resize-none"
+            />
+          </div>
+
+          {/* Precio y Categoría */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="precio">Precio (S/) *</Label>
               <Input
                 id="precio"
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="0.00"
                 value={formData.precio}
                 onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
@@ -222,39 +273,40 @@ export default function CreateProductoForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="categoriaId">Categoría *</Label>
+              <Label htmlFor="categoria_id">Categoría *</Label>
               <Select
-                value={formData.categoria_id || ''}
-                onValueChange={(value) => {
-                  setFormData({ ...formData, categoria_id: value });
-                  // Limpiar error de categoría si existía
-                  if (error === 'La categoría es obligatoria') {
-                    setError(null);
-                  }
-                }}
-                disabled={loading}
+                value={formData.categoria_id}
+                onValueChange={(value) => setFormData({ ...formData, categoria_id: value })}
+                disabled={loading || categoriasLoading}
               >
-                <SelectTrigger className={!formData.categoria_id && error === 'La categoría es obligatoria' ? 'border-red-500' : ''}>
+                <SelectTrigger>
                   <SelectValue placeholder="Selecciona categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categorias.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.nombre}
+                  {categorias.length > 0 ? (
+                    categorias.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {cat.nombre}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      No hay categorías disponibles
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Sección: Inventario */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Stock */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="stock">Stock Inicial</Label>
               <Input
                 id="stock"
                 type="number"
+                min="0"
                 placeholder="0"
                 value={formData.stock}
                 onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
@@ -263,44 +315,41 @@ export default function CreateProductoForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="stockMinimo">Stock Mínimo</Label>
+              <Label htmlFor="stock_minimo">Stock Mínimo</Label>
               <Input
-                id="stockMinimo"
+                id="stock_minimo"
                 type="number"
+                min="0"
                 placeholder="10"
-                value={formData.stockMinimo}
-                onChange={(e) => setFormData({ ...formData, stockMinimo: e.target.value })}
+                value={formData.stock_minimo}
+                onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })}
                 disabled={loading}
               />
             </div>
           </div>
 
-          {/* Sección: Imagen (File Upload) */}
+          {/* Imagen */}
           <div className="space-y-2">
             <Label>Imagen del Producto</Label>
-            
+
             {!previewUrl ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition-colors cursor-pointer relative">
-                <input 
-                  type="file" 
-                  accept="image/*" 
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer relative">
+                <input
+                  type="file"
+                  accept="image/*"
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   onChange={handleImageChange}
                   disabled={loading}
                 />
                 <div className="flex flex-col items-center justify-center text-gray-500">
-                  <ImagePlus className="h-10 w-10 mb-2" />
+                  <ImagePlus className="h-8 w-8 mb-2" />
                   <span className="text-sm font-medium">Haz clic para subir una imagen</span>
                   <span className="text-xs text-gray-400">PNG, JPG, WEBP (Máx. 2MB)</span>
                 </div>
               </div>
             ) : (
-              <div className="relative w-full max-w-xs h-48 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                <img 
-                  src={previewUrl} 
-                  alt="Previsualización" 
-                  className="w-full h-full object-cover"
-                />
+              <div className="relative w-full max-w-xs h-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                <img src={previewUrl} alt="Previsualización" className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={removeImage}
@@ -313,7 +362,7 @@ export default function CreateProductoForm({
             )}
           </div>
 
-          {/* Sección: Estado */}
+          {/* Estado */}
           <div className="space-y-2">
             <Label htmlFor="estado">Estado</Label>
             <Select
@@ -321,7 +370,7 @@ export default function CreateProductoForm({
               onValueChange={(value) => setFormData({ ...formData, estado: value })}
               disabled={loading}
             >
-              <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -333,22 +382,21 @@ export default function CreateProductoForm({
             </Select>
           </div>
 
-        </CardContent>
-
-        <CardFooter className="flex justify-end gap-3 border-t pt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-            disabled={loading}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Subiendo y Creando...' : 'Crear Producto'}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Creando...' : 'Crear Producto'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

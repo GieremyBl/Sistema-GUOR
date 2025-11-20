@@ -1,5 +1,5 @@
 
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/supabase/client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -211,8 +211,70 @@ export interface ProductoCreateData {
     estado?: 'activo' | 'inactivo';
 }
 
+
 export interface ProductoUpdateData extends Partial<ProductoCreateData> {
     estado?: 'activo' | 'inactivo';
+}
+
+export type EstadoTaller = 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
+export type EspecialidadTaller = 'CORTE' | 'CONFECCION' | 'BORDADO' | 'ESTAMPADO' | 'COSTURA' | 'ACABADOS' | 'OTRO';
+
+export interface Taller {
+  id: number;
+  nombre: string;
+  ruc?: string | null;
+  contacto?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  direccion?: string | null;
+  especialidad?: EspecialidadTaller | null;
+  estado: EstadoTaller;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface TalleresResponse {
+  talleres: Taller[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface FetchTalleresParams {
+  page?: number;
+  limit?: number;
+  busqueda?: string;
+  estado?: EstadoTaller;
+  especialidad?: EspecialidadTaller;
+}
+
+export interface TallerCreateData {
+  nombre: string;
+  ruc?: string;
+  contacto?: string;
+  telefono?: string;
+  email?: string;
+  direccion?: string;
+  especialidad?: EspecialidadTaller;
+  estado?: EstadoTaller;
+}
+
+export interface TallerUpdateData {
+  nombre?: string;
+  ruc?: string;
+  contacto?: string;
+  telefono?: string;
+  email?: string;
+  direccion?: string;
+  especialidad?: EspecialidadTaller;
+  estado?: EstadoTaller;
+}
+
+export interface EstadisticasTalleres {
+  total: number;
+  porEstado: Record<EstadoTaller, number>;
+  porEspecialidad: Record<EspecialidadTaller, number>;
 }
 
 //Funciones del API de Usuarios
@@ -517,5 +579,107 @@ export async function getProducto(id: number): Promise<Producto> {
 export async function fetchProductos(): Promise<Producto[]> {
   const response = await fetch('/api/productos');
   return handleResponse(response);
+}
+
+// Funciones del API de Talleres
+
+// Obtener talleres con filtros
+
+export async function fetchTalleres(params: FetchTalleresParams = {}): Promise<TalleresResponse> {
+  const searchParams = new URLSearchParams();
+  
+  if (params.page) searchParams.append('page', params.page.toString());
+  if (params.limit) searchParams.append('limit', params.limit.toString());
+  if (params.busqueda) searchParams.append('busqueda', params.busqueda);
+  if (params.estado) searchParams.append('estado', params.estado);
+  if (params.especialidad) searchParams.append('especialidad', params.especialidad);
+
+  const response = await fetch(`${API_URL}/api/talleres?${searchParams}`);
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error al cargar talleres');
+  }
+
+  return response.json();
+}
+
+// Obtener un taller por ID
+
+export async function getTaller(id: number): Promise<{ taller: Taller }> {
+  const response = await fetch(`${API_URL}/api/talleres/${id}`);
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Taller no encontrado');
+  }
+
+  return response.json();
+}
+
+// Crear nuevo taller
+
+export async function createTaller(data: TallerCreateData): Promise<{ message: string; taller: Taller }> {
+  const response = await fetch(`${API_URL}/api/talleres`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error al crear taller');
+  }
+
+  return response.json();
+}
+
+// Actualizar taller existente 
+
+export async function updateTaller(
+  id: number, 
+  data: TallerUpdateData
+): Promise<{ message: string; taller: Taller }> {
+  const response = await fetch(`${API_URL}/api/talleres/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error al actualizar taller');
+  }
+
+  return response.json();
+}
+
+// Eliminar talleres
+
+export async function deleteTaller(id: number): Promise<{ message: string; id: number }> {
+  const response = await fetch(`${API_URL}/api/talleres/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error al eliminar taller');
+  }
+
+  return response.json();
+}
+
+//Obtener estadísticas de talleres
+ 
+export async function getEstadisticasTalleres(): Promise<EstadisticasTalleres> {
+  const response = await fetch(`${API_URL}/api/talleres/estadisticas`);
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error al obtener estadísticas');
+  }
+
+  const result = await response.json();
+  return result.data;
 }
 

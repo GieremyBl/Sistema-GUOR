@@ -1,6 +1,6 @@
 "use client";
 
-import { Pedido } from '@/lib/api';
+import { Pedido } from '@/api';
 
 // Este componente recibe los datos ya cargados
 export default function PedidosTable({ pedidos }: { pedidos: Pedido[] }) {

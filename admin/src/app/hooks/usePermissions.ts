@@ -1,81 +1,59 @@
-"use client";
+// src/hooks/usePermissions.ts
 
-import { useCurrentUser } from './useCurrentUser';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/supabase/client';
+import { hasPermission } from '@/roles-config';
 
-type Permission = 
-  | 'VIEW_DASHBOARD'
-  | 'VIEW_USUARIOS'
-  | 'VIEW_PRODUCTOS'
-  | 'VIEW_PEDIDOS'
-  | 'VIEW_CLIENTES'
-  | 'VIEW_COTIZACIONES'
-  | 'VIEW_REPORTES'
-  | 'MANAGE_USUARIOS'
-  | 'MANAGE_PRODUCTOS'
-  | 'MANAGE_PEDIDOS';
-
-const rolePermissions: Record<string, Permission[]> = {
-  administrador: [
-    'VIEW_DASHBOARD',
-    'VIEW_USUARIOS',
-    'VIEW_PRODUCTOS',
-    'VIEW_PEDIDOS',
-    'VIEW_CLIENTES',
-    'VIEW_COTIZACIONES',
-    'VIEW_REPORTES',
-    'MANAGE_USUARIOS',
-    'MANAGE_PRODUCTOS',
-    'MANAGE_PEDIDOS',
-  ],
-  recepcionista: [
-    'VIEW_DASHBOARD',
-    'VIEW_PEDIDOS',
-    'VIEW_CLIENTES',
-    'VIEW_COTIZACIONES',
-    'MANAGE_PEDIDOS',
-  ],
-  diseñador: [
-    'VIEW_DASHBOARD',
-    'VIEW_PRODUCTOS',
-    'VIEW_PEDIDOS',
-    'MANAGE_PRODUCTOS',
-  ],
-  cortador: [
-    'VIEW_DASHBOARD',
-    'VIEW_PEDIDOS',
-  ],
-  ayudante: [
-    'VIEW_DASHBOARD',
-  ],
-  representante_taller: [
-    'VIEW_DASHBOARD',
-    'VIEW_PEDIDOS',
-  ],
-};
+interface User {
+  id: string;
+  email: string;
+  rol: string;
+  nombre_completo: string;
+}
 
 export function usePermissions() {
-  const { usuario, loading } = useCurrentUser();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const hasPermission = (permission: Permission): boolean => {
-    if (!usuario) return false;
-    const permissions = rolePermissions[usuario.rol] || [];
-    return permissions.includes(permission);
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  const fetchUser = async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (authUser) {
+        const { data: userData } = await supabase
+          .from('usuarios')
+          .select('id, email, rol, nombre_completo')
+          .eq('email', authUser.email)
+          .single();
+        
+        if (userData) {
+          setUser(userData);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const hasAnyPermission = (permissions: Permission[]): boolean => {
-    return permissions.some(p => hasPermission(p));
+  const can = (action: 'create' | 'view' | 'edit' | 'delete' | 'export', resource: string): boolean => {
+    if (!user) return false;
+    return hasPermission(user.rol.toLowerCase(), action, resource);
   };
 
-  const hasAllPermissions = (permissions: Permission[]): boolean => {
-    return permissions.every(p => hasPermission(p));
+  const isAdmin = (): boolean => {
+    return user?.rol.toLowerCase() === 'administrador';
   };
 
-  
   return {
-    hasPermission,
-    hasAnyPermission,
-    hasAllPermissions,
+    user,
     loading,
-    rol: usuario?.rol,
+    can,
+    isAdmin,
   };
 }

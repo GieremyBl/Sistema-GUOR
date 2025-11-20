@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/ui/select';
 import {
   Table,
   TableBody,
@@ -18,18 +18,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+} from '@/ui/table';
+import { Badge } from '@/ui/badge';
 import { Plus, Search, Filter, Eye, Loader2 } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import {
   fetchPedidos,
   Pedido,
   EstadoPedido,
   PrioridadPedido,
   FetchPedidosParams,
-} from '@/lib/api';
+} from '@/api';
 import { format } from 'date-fns';
+import { CreatePedidoDialog } from '@/components/pedidos/CreatePedidoDialog';
 
 type FilterValue = EstadoPedido | PrioridadPedido | 'all' | '';
 
@@ -38,8 +39,9 @@ export default function PedidosPage() {
   const { toast } = useToast();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateDialog, setShowCreateDialog] = useState(false); // ✅ MOVIDO AQUÍ
 
-  // Filtros. Usamos '' para el estado inicial de "sin filtrar".
+  // Filtros
   const [busqueda, setBusqueda] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoPedido | ''>('');
   const [prioridadFiltro, setPrioridadFiltro] = useState<PrioridadPedido | ''>('');
@@ -89,7 +91,6 @@ export default function PedidosPage() {
   };
 
   const handleFilterChange = (setter: React.Dispatch<React.SetStateAction<any>>, value: FilterValue) => {
-    // Si el valor es 'all', lo tratamos como cadena vacía para limpiar el filtro en el estado
     const filterValue = value === 'all' ? '' : value;
     setter(filterValue);
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -127,7 +128,6 @@ export default function PedidosPage() {
     router.push(`/Panel-Administrativo/pedidos/${id}`);
   };
 
-  // Convertir el valor del estado de filtro ('' o Enum) a un valor para el Select ('all' o Enum)
   const estadoSelectValue = estadoFiltro || 'all';
   const prioridadSelectValue = prioridadFiltro || 'all';
 
@@ -141,7 +141,7 @@ export default function PedidosPage() {
             Administra todos los pedidos del sistema ({pagination.total} total)
           </p>
         </div>
-        <Button onClick={() => router.push('/Panel-Administrativo/pedidos/nuevo')}>
+        <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nuevo Pedido
         </Button>
@@ -164,15 +164,14 @@ export default function PedidosPage() {
 
         {/* Filtro de Estado */}
         <Select
-          value={estadoSelectValue} // Usamos el valor convertido
+          value={estadoSelectValue}
           onValueChange={(value: FilterValue) => handleFilterChange(setEstadoFiltro, value)}
         >
           <SelectTrigger className="w-full md:w-[200px]">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
-            {/* 🎯 SOLUCIÓN: Usamos un valor no vacío 'all' para el item "Todos" */}
-            <SelectItem value="all">Todos los estados</SelectItem> 
+            <SelectItem value="all">Todos los estados</SelectItem>
             <SelectItem value="PENDIENTE">Pendiente</SelectItem>
             <SelectItem value="EN_PROCESO">En Proceso</SelectItem>
             <SelectItem value="TERMINADO">Terminado</SelectItem>
@@ -183,15 +182,14 @@ export default function PedidosPage() {
 
         {/* Filtro de Prioridad */}
         <Select
-          value={prioridadSelectValue} // Usamos el valor convertido
+          value={prioridadSelectValue}
           onValueChange={(value: FilterValue) => handleFilterChange(setPrioridadFiltro, value)}
         >
           <SelectTrigger className="w-full md:w-[200px]">
             <SelectValue placeholder="Prioridad" />
           </SelectTrigger>
           <SelectContent>
-            {/* 🎯 SOLUCIÓN: Usamos un valor no vacío 'all' para el item "Todas" */}
-            <SelectItem value="all">Todas las prioridades</SelectItem> 
+            <SelectItem value="all">Todas las prioridades</SelectItem>
             <SelectItem value="BAJA">Baja</SelectItem>
             <SelectItem value="NORMAL">Normal</SelectItem>
             <SelectItem value="ALTA">Alta</SelectItem>
@@ -253,7 +251,7 @@ export default function PedidosPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleVerDetalle(pedido.id)}
+                        onClick={() => handleVerDetalle(pedido.id.toString())}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -302,6 +300,13 @@ export default function PedidosPage() {
           </div>
         </>
       )}
+
+      {/* Dialog de Crear Pedido */}
+      <CreatePedidoDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSuccess={loadPedidos}
+      />
     </div>
   );
 }

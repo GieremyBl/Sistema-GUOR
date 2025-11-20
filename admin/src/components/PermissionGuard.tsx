@@ -1,7 +1,7 @@
 'use client';
 
-import { usePermissions } from '@/app/hooks/usePermissions';
-import { Permission } from '@/app/types';
+import { usePermissions } from'@/hooks/usePermissions';
+import { Permission } from '@/types';
 
 interface PermissionGuardProps {
   children: React.ReactNode;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCurrentUser } from '@/app/hooks/useCurrentUser';
+import { useCurrentUser } from'@/hooks/useCurrentUser';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 

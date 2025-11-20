@@ -1,7 +1,7 @@
 'use client';
 
 import { Edit, Trash2, Mail, Phone, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/ui/button';
 import {
   Table,
   TableBody,
@@ -9,8 +9,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+} from '@/ui/table';
+import { Badge } from '@/ui/badge';
 
 interface Usuario {
   id: string;

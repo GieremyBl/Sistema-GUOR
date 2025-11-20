@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import UserTable from '@/components/usuarios/UserTable';
-import UserFilters from '@/components/usuarios/UserFilters';
-import DeleteUserDialog from '@/components/usuarios/DeleteUserDialog';
-import { Button } from '@/components/ui/button';
+import UserTable from '@/components/usuarios/UsuarioTable';
+import UserFilters from '@/components/usuarios/UsuarioFilters';
+import DeleteUserDialog from '@/components/usuarios/DeleteUsuarioDialog';
+import CreateUsuarioDialog from '@/usuarios/CreateUsuarioDialog';
+import EditUsuarioDialog from '@/usuarios/EditUsuarioDialog';
+import { Button } from '@/ui/button';
 import { Plus } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
-import { fetchUsuarios, deleteUsuario, Usuario } from '@/lib/api'; 
+import { useToast } from '@/hooks/use-toast';
+import { fetchUsuarios, deleteUsuario, createUsuario, updateUsuario, Usuario } from '@/api';
 
 export default function UsuariosPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +26,10 @@ export default function UsuariosPage() {
     total: 0,
     totalPages: 0,
   });
+  
+  // Estados de diálogos
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [usuarioToEdit, setUsuarioToEdit] = useState<Usuario | null>(null);
   const [userToDelete, setUserToDelete] = useState<Usuario | null>(null);
 
   useEffect(() => {
@@ -62,7 +66,50 @@ export default function UsuariosPage() {
   };
 
   const handleEdit = (id: string) => {
-    router.push(`/Panel-Administrativo/usuarios/${id}`);
+    const usuario = usuarios.find((u) => u.id.toString() === id);
+    if (usuario) {
+      setUsuarioToEdit(usuario);
+    }
+  };
+
+  const handleCreate = async (data: any) => {
+    try {
+      await createUsuario(data);
+      toast({
+        title: 'Éxito',
+        description: 'Usuario creado correctamente',
+      });
+      setShowCreateDialog(false);
+      await loadUsuarios();
+    } catch (error: any) {
+      console.error('Error creando usuario:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo crear el usuario',
+      });
+      throw error;
+    }
+  };
+
+  const handleUpdate = async (id: string, data: any) => {
+    try {
+      await updateUsuario(id, data);
+      toast({
+        title: 'Éxito',
+        description: 'Usuario actualizado correctamente',
+      });
+      setUsuarioToEdit(null);
+      await loadUsuarios();
+    } catch (error: any) {
+      console.error('Error actualizando usuario:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo actualizar el usuario',
+      });
+      throw error;
+    }
   };
 
   const handleDelete = (usuario: Usuario) => {
@@ -74,15 +121,13 @@ export default function UsuariosPage() {
 
     try {
       await deleteUsuario(userToDelete.id);
-
       toast({
         title: 'Éxito',
         description: 'Usuario eliminado correctamente',
       });
-
       await loadUsuarios();
       setUserToDelete(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error eliminando usuario:', error);
       toast({
         variant: 'destructive',
@@ -106,7 +151,7 @@ export default function UsuariosPage() {
             Administra los usuarios del sistema
           </p>
         </div>
-        <Button onClick={() => router.push('/Panel-Administrativo/usuarios/nuevo')}>
+        <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nuevo Usuario
         </Button>
@@ -123,6 +168,24 @@ export default function UsuariosPage() {
         onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
       />
 
+      {/* Diálogo de creación */}
+      <CreateUsuarioDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSubmit={handleCreate}
+      />
+
+      {/* Diálogo de edición */}
+      {usuarioToEdit && (
+        <EditUsuarioDialog
+          open={!!usuarioToEdit}
+          onOpenChange={(open) => !open && setUsuarioToEdit(null)}
+          usuario={usuarioToEdit}
+          onSubmit={handleUpdate}
+        />
+      )}
+
+      {/* Diálogo de eliminación */}
       <DeleteUserDialog
         user={userToDelete}
         open={!!userToDelete}

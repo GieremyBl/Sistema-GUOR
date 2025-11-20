@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createPedido } from '@/lib/actions/pedidos';
-import { fetchClientesActivos } from '@/lib/actions/clientes';
-import { getProductosDisponibles } from '@/lib/actions/productos';
+import { createPedido } from '@/actions/pedidos';
+import { fetchClientesActivos } from '@/actions/clientes';
+import { getProductosDisponibles } from '@/actions/productos';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from '@/ui/dialog';
 import {
   Form,
   FormControl,
@@ -22,23 +22,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from '@/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useToast } from '@/app/hooks/use-toast';
+} from '@/ui/select';
+import { Input } from '@/ui/input';
+import { Button } from '@/ui/button';
+import { Calendar } from '@/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
+import { useToast } from'@/hooks/use-toast';
 import { Loader2, CalendarIcon, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils';
 
 const detalleSchema = z.object({
   producto_id: z.string().min(1, 'Selecciona un producto'),
