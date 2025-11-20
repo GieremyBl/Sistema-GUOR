@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
 
-// El estado del pedido según tu tabla es 'Estado'
-type EstadoPedido = 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO'; // Ejemplo de estados
+type EstadoPedido = 'PENDIENTE' | 'EN_PROCESO' | 'TERMINADO' | 'ENTREGADO' | 'CANCELADO';
+type PrioridadPedido = 'BAJA' | 'NORMAL' | 'ALTA' | 'URGENTE';
 
 const getSupabaseClient = () => {
     return createClient(
@@ -13,42 +13,110 @@ const getSupabaseClient = () => {
 
 /**
  * GET /api/pedidos
- * Obtener todos los pedidos
+ * Obtener todos los pedidos con filtros y paginación
  */
 export const getPedidos = async (req: Request, res: Response) => {
     try {
         let supabase = getSupabaseClient();
-        const { data: pedidos, error } = await supabase
+        
+        // Obtener parámetros de query
+        const { 
+            page = 1, 
+            limit = 10, 
+            busqueda, 
+            estado, 
+            prioridad, 
+            cliente_id,
+            fecha_desde,
+            fecha_hasta 
+        } = req.query;
+
+        // Calcular offset para paginación
+        const pageNum = parseInt(page as string);
+        const limitNum = parseInt(limit as string);
+        const from = (pageNum - 1) * limitNum;
+        const to = from + limitNum - 1;
+
+        // ✅ CORRECCIÓN: Usar razon_social en lugar de nombre_completo
+        let query = supabase
             .from('pedidos')
             .select(`
                 *,
-                cliente:clientes(nombre_completo, telefono)
-            `) // Ajusta 'clientes' al nombre de tu tabla de clientes
-            .order('fecha_pedido', { ascending: false });
+                cliente:clientes(id, razon_social, ruc, email, telefono)
+            `, { count: 'exact' });
+
+        // Aplicar filtros
+        if (estado) query = query.eq('estado', estado);
+        if (prioridad) query = query.eq('prioridad', prioridad);
+        if (cliente_id) query = query.eq('cliente_id', cliente_id);
+        
+        if (fecha_desde) query = query.gte('fecha_pedido', fecha_desde);
+        if (fecha_hasta) query = query.lte('fecha_pedido', fecha_hasta);
+
+        // Búsqueda por RUC o razón social
+        if (busqueda) {
+            // Para búsqueda en relaciones, necesitamos hacer una query diferente
+            const { data: clientes } = await supabase
+                .from('clientes')
+                .select('id')
+                .or(`razon_social.ilike.%${busqueda}%,ruc.ilike.%${busqueda}%`);
+            
+            if (clientes && clientes.length > 0) {
+                const clienteIds = clientes.map(c => c.id);
+                query = query.in('cliente_id', clienteIds);
+            } else {
+                // Si no se encuentra ningún cliente, devolver lista vacía
+                return res.json({ 
+                    pedidos: [], 
+                    total: 0, 
+                    page: pageNum, 
+                    limit: limitNum, 
+                    totalPages: 0 
+                });
+            }
+        }
+
+        // Ordenamiento y paginación
+        query = query.order('created_at', { ascending: false }).range(from, to);
+
+        const { data: pedidos, error, count } = await query;
 
         if (error) {
             console.error('Error obteniendo pedidos:', error);
             return res.status(500).json({ success: false, error: error.message });
         }
-        return res.json({ success: true, data: pedidos || [] });
-    } catch (error) {
+
+        const totalPages = count ? Math.ceil(count / limitNum) : 0;
+
+        return res.json({ 
+            pedidos: pedidos || [], 
+            total: count || 0, 
+            page: pageNum, 
+            limit: limitNum, 
+            totalPages 
+        });
+    } catch (error: any) {
+        console.error('Error en getPedidos:', error);
         return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
 };
 
 /**
  * GET /api/pedidos/historial
- * Obtener historial de pedidos (generalmente todos o un subconjunto filtrado)
+ * Obtener historial de pedidos
  */
 export const getHistorial = async (req: Request, res: Response) => {
-    // La lógica es similar a getPedidos, pero puede incluir más filtros o paginación
     try {
         let supabase = getSupabaseClient();
 
+        // ✅ CORRECCIÓN: Usar razon_social
         const { data: historial, error } = await supabase
             .from('pedidos')
-            .select('*')
-            .order('created_at', { ascending: false }); // Usando created_at o fecha_pedido
+            .select(`
+                *,
+                cliente:clientes(id, razon_social, ruc, email)
+            `)
+            .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error obteniendo historial:', error);
@@ -69,16 +137,33 @@ export const getEstadisticas = async (req: Request, res: Response) => {
     try {
         let supabase = getSupabaseClient();
 
-        const { data, error } = await supabase.rpc('get_pedido_stats');
+        // Si tienes una función RPC, úsala. Si no, hacemos la query directa
+        const { data: pedidos, error } = await supabase
+            .from('pedidos')
+            .select('estado, prioridad, total');
 
         if (error) {
             console.error('Error obteniendo estadísticas:', error);
             return res.status(500).json({ success: false, error: error.message });
         }
 
+        // Calcular estadísticas
+        const stats = {
+            total: pedidos?.length || 0,
+            totalFacturado: pedidos?.reduce((acc, curr) => acc + (curr.total || 0), 0) || 0,
+            porEstado: pedidos?.reduce((acc: any, curr) => {
+                acc[curr.estado] = (acc[curr.estado] || 0) + 1;
+                return acc;
+            }, {}) || {},
+            porPrioridad: pedidos?.reduce((acc: any, curr) => {
+                acc[curr.prioridad] = (acc[curr.prioridad] || 0) + 1;
+                return acc;
+            }, {}) || {}
+        };
+
         return res.json({ 
             success: true, 
-            data: data || { totalPedidos: 0, totalVentas: 0 } 
+            data: stats
         });
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Error interno del servidor' });
@@ -94,20 +179,26 @@ export const getPedido = async (req: Request, res: Response) => {
         let supabase = getSupabaseClient();
 
         const { id } = req.params;
+        
+        // ✅ CORRECCIÓN: Usar razon_social y ajustar nombre de tabla de detalles
         const { data: pedido, error } = await supabase
             .from('pedidos')
             .select(`
                 *,
-                cliente:clientes(nombre_completo, telefono),
-                detalles_pedido(*, producto:productos(nombre, precio))
-            `) // Relación con detalles_pedido y productos
+                cliente:clientes(id, razon_social, ruc, email, telefono, direccion),
+                detalles:detalle_pedidos(
+                    *,
+                    producto:productos(id, nombre, precio, descripcion)
+                )
+            `)
             .eq('id', id)
             .single();
 
         if (error || !pedido) {
             return res.status(404).json({ success: false, error: 'Pedido no encontrado' });
         }
-        return res.json({ success: true, data: pedido });
+        
+        return res.json({ success: true, pedido });
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
@@ -118,39 +209,82 @@ export const getPedido = async (req: Request, res: Response) => {
  * Crear un nuevo pedido
  */
 export const createPedido = async (req: Request, res: Response) => {
-    // NOTA: La creación de un pedido (cabecera + detalles + actualización de stock) 
-    // ¡Debe hacerse idealmente con una FUNCIÓN RPC para garantizar la atomicidad (transacciones) en Supabase!
     try {
         const { 
-            cliente_id, fecha_entrega, detalles, notas, direccion_envio 
+            cliente_id, 
+            fecha_entrega, 
+            prioridad = 'NORMAL',
+            detalles 
         } = req.body;
 
-        // Validaciones básicas (omitiendo por brevedad, pero cruciales)
-        let supabase = getSupabaseClient();
-
-        const { data: nuevoPedido, error } = await supabase.rpc('create_full_order', {
-            // Parámetros de la función RPC que maneja la transacción
-            p_cliente_id: cliente_id,
-            p_fecha_entrega: fecha_entrega,
-            p_detalles: detalles, // Array de { producto_id, cantidad, precio_unitario }
-            p_notas: notas,
-            p_direccion_envio: direccion_envio,
-        });
-        
-        if (error) {
-            console.error('Error creando pedido con RPC:', error);
-            return res.status(400).json({ success: false, error: error.message });
+        // Validaciones básicas
+        if (!cliente_id || !detalles || detalles.length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'cliente_id y detalles son requeridos' 
+            });
         }
 
-        return res.status(201).json({ success: true, message: 'Pedido creado exitosamente', data: nuevoPedido });
-    } catch (error) {
+        let supabase = getSupabaseClient();
+
+        // Calcular total
+        const total = detalles.reduce((acc: number, item: any) => {
+            return acc + (item.cantidad * item.precio_unitario);
+        }, 0);
+
+        // Insertar cabecera del pedido
+        const { data: pedido, error: pedidoError } = await supabase
+            .from('pedidos')
+            .insert({
+                cliente_id,
+                fecha_entrega,
+                prioridad,
+                estado: 'PENDIENTE',
+                total,
+                fecha_pedido: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (pedidoError) {
+            console.error('Error creando pedido:', pedidoError);
+            return res.status(400).json({ success: false, error: pedidoError.message });
+        }
+
+        // Insertar detalles
+        const detallesToInsert = detalles.map((d: any) => ({
+            pedido_id: pedido.id,
+            producto_id: d.producto_id,
+            cantidad: d.cantidad,
+            precio_unitario: d.precio_unitario,
+            subtotal: d.cantidad * d.precio_unitario
+        }));
+
+        const { error: detallesError } = await supabase
+            .from('detalle_pedidos')
+            .insert(detallesToInsert);
+
+        if (detallesError) {
+            // Rollback: eliminar pedido si fallan los detalles
+            await supabase.from('pedidos').delete().eq('id', pedido.id);
+            console.error('Error creando detalles:', detallesError);
+            return res.status(400).json({ success: false, error: detallesError.message });
+        }
+
+        return res.status(201).json({ 
+            success: true, 
+            message: 'Pedido creado exitosamente', 
+            pedido 
+        });
+    } catch (error: any) {
+        console.error('Error en createPedido:', error);
         return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
 };
 
 /**
  * PATCH /api/pedidos/:id
- * Actualizar un pedido (ej. cambiar estado)
+ * Actualizar un pedido
  */
 export const updatePedido = async (req: Request, res: Response) => {
     try {
@@ -160,27 +294,37 @@ export const updatePedido = async (req: Request, res: Response) => {
         const { estado, fecha_entrega, prioridad } = req.body;
         
         const updateData: any = {};
-        if (estado) updateData.estado = estado; // Asume validación de estado
+        if (estado) updateData.estado = estado;
         if (fecha_entrega) updateData.fecha_entrega = fecha_entrega;
         if (prioridad) updateData.prioridad = prioridad;
         updateData.updated_at = new Date().toISOString();
 
         if (Object.keys(updateData).length === 1 && updateData.updated_at) {
-            return res.status(400).json({ success: false, error: 'Debe proporcionar al menos un campo para actualizar' });
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Debe proporcionar al menos un campo para actualizar' 
+            });
         }
 
         const { data: pedido, error } = await supabase
             .from('pedidos')
             .update(updateData)
             .eq('id', id)
-            .select('*')
+            .select()
             .single();
 
         if (error || !pedido) {
-            return res.status(404).json({ success: false, error: 'Pedido no encontrado o error de actualización' });
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Pedido no encontrado o error de actualización' 
+            });
         }
 
-        return res.json({ success: true, message: 'Pedido actualizado exitosamente', data: pedido });
+        return res.json({ 
+            success: true, 
+            message: 'Pedido actualizado exitosamente', 
+            pedido 
+        });
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
@@ -196,15 +340,25 @@ export const deletePedido = async (req: Request, res: Response) => {
 
         const { id } = req.params;
         
-        // La eliminación de pedidos y sus detalles también debería ser transaccional con RPC
-        const { error } = await supabase.rpc('delete_full_order', { p_pedido_id: id }); // Suponiendo que tienes esta RPC
+        // Primero eliminar detalles (si no tienes CASCADE configurado)
+        await supabase.from('detalle_pedidos').delete().eq('pedido_id', id);
+        
+        // Luego eliminar el pedido
+        const { error } = await supabase
+            .from('pedidos')
+            .delete()
+            .eq('id', id);
 
         if (error) {
             console.error('Error eliminando pedido:', error);
             return res.status(400).json({ success: false, error: error.message });
         }
 
-        return res.json({ success: true, message: 'Pedido y detalles eliminados exitosamente' });
+        return res.json({ 
+            success: true, 
+            message: 'Pedido eliminado exitosamente',
+            id 
+        });
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }

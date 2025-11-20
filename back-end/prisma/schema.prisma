@@ -160,7 +160,7 @@ model Confeccion {
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
   pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  taller Taller @relation(fields: [tallerId], references: [id])
+  taller Taller @relation("ConfeccionTaller", fields: [tallerId], references: [id])
 
   @@map("confecciones")
 }
@@ -183,17 +183,20 @@ model Despacho {
 }
 
 model Taller {
-  id        BigInt   @id @default(autoincrement())
-  nombre    String
-  direccion String
-  telefono  String
-  email     String?  @unique
-  estado    Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            BigInt                @id @default(autoincrement())
+  nombre        String
+  ruc           String?               @unique
+  contacto      String?
+  telefono      String?
+  email         String?
+  direccion     String?
+  especialidad  EspecialidadTaller?
+  estado        EstadoTaller          @default(ACTIVO)
+  created_at    DateTime              @default(now())
+  updated_at    DateTime?             @updatedAt
 
-  confecciones Confeccion[]
-
+  confecciones  Confeccion[]          @relation("ConfeccionTaller")
+  
   @@map("talleres")
 }
 
@@ -287,4 +290,20 @@ enum EstadoProducto {
   descontinuado
   
   @@map("estado_producto")
+}
+
+enum EstadoTaller {
+  ACTIVO
+  INACTIVO
+  SUSPENDIDO
+}
+
+enum EspecialidadTaller {
+  CORTE
+  CONFECCION
+  BORDADO
+  ESTAMPADO
+  COSTURA
+  ACABADOS
+  OTRO
 }

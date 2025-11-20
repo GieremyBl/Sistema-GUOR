@@ -1,12 +1,23 @@
 import { Router } from 'express';
-import { talleresController } from '../controllers/talleres.controller';
-import { authenticate } from '../middleware/auth.middleware';
+import { 
+    getTalleres, 
+    getTaller, 
+    createTaller, 
+    updateTaller, 
+    deleteTaller,
+    getEstadisticas      
+} from '../controllers/talleres.controller';
 
 const router = Router();
 
-router.get('/', authenticate, talleresController.getAll);
-router.post('/', authenticate, talleresController.create);
-router.put('/:id', authenticate, talleresController.update);
-router.delete('/:id', authenticate, talleresController.delete);
+// Rutas Especiales - Deben ir antes de la ruta dinámica /:id
+router.get('/estadisticas', getEstadisticas);
+
+// Rutas CRUD de Talleres
+router.get('/', getTalleres);
+router.get('/:id', getTaller);
+router.post('/', createTaller);
+router.patch('/:id', updateTaller);
+router.delete('/:id', deleteTaller);
 
 export default router;
