@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Pedido } from '@types';
-import { deletePedido } from '@/actions/pedidos';
+import { deletePedido } from '@/components/actions/pedidos';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,9 +13,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/ui/alert-dialog';
+} from '@/components//ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
-import { useToast } from'@/hooks/use-toast';
+import { useToast } from'@/app/hooks/use-toast';
 
 interface DeletePedidoDialogProps {
   pedido: Pedido;

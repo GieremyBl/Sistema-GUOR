@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { updatePedido } from '@/actions/pedidos';
-import { fetchClientesActivos } from '@/actions/clientes';
+import { updatePedido } from '@/components/actions/pedidos';
+import { fetchClientesActivos } from '@/components/actions/clientes';
 import { Pedido, EstadoPedido, PrioridadPedido } from '@types';
 import {
   Dialog,
@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/ui/dialog';
+} from '@/components//ui/dialog';
 import {
   Form,
   FormControl,
@@ -22,22 +22,22 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/ui/form';
+} from '@/components//ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/ui/select';
-import { Button } from '@/ui/button';
-import { Calendar } from '@/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
-import { useToast } from'@/hooks/use-toast';
+} from '@/components//ui/select';
+import { Button } from '@/components//ui/button';
+import { Calendar } from '@/components//ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components//ui/popover';
+import { useToast } from'@/app/hooks/use-toast';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/utils';
+import { cn } from '@/components/utils';
 
 const formSchema = z.object({
   cliente_id: z.string().min(1, 'Selecciona un cliente'),

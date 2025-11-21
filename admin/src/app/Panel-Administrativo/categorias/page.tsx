@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import CategoriasTable, { CategoriaTable } from '@/categorias/CategoriasTable';
-import CreateCategoriaDialog from '@/categorias/CreateCategoriaDialog';
-import EditCategoriaDialog from '@/categorias/EditCategoriaDialog';
-import { Button } from '@/ui/button';
-import { Input } from '@/ui/input';
+import CategoriasTable, { CategoriaTable } from '@/components/categorias/CategoriasTable';
+import CreateCategoriaDialog from '@/components/categorias/CreateCategoriaDialog';
+import EditCategoriaDialog from '@/components/categorias/EditCategoriaDialog';
+import { Button } from '@/components//ui/button';
+import { Input } from '@/components//ui/input';
 import { Plus, Search } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/app/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +17,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/ui/alert-dialog';
+} from '@/components//ui/alert-dialog';
 import {
   fetchCategorias,
   createCategoria,
@@ -26,7 +26,7 @@ import {
   Categoria,
   CategoriaCreateData,
   CategoriaUpdateData,
-} from '@/api';
+} from '@/lib/api';
 
 export default function CategoriasPage() {
   const { toast } = useToast();

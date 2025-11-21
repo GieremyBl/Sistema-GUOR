@@ -1,8 +1,8 @@
 // src/hooks/usePermissions.ts
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/supabase/client';
-import { hasPermission } from '@/roles-config';
+import { supabase } from '@/components/supabase/client';
+import { hasPermission } from '@/components/roles-config';
 
 interface User {
   id: string;

@@ -1,21 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ProductosTable from '@/productos/ProductosTable';
-import StockDialog from '@/productos/StockDialog';
-import CreateProductoDialog from '@/productos/CreateProductoDialog';
-import EditProductoDialog from '@/productos/EditProductoDialog';
-import { Button } from '@/ui/button';
-import { Input } from '@/ui/input';
+import ProductosTable from '@/components/productos/ProductosTable';
+import StockDialog from '@/components/productos/StockDialog';
+import CreateProductoDialog from '@/components/productos/CreateProductoDialog';
+import EditProductoDialog from '@/components/productos/EditProductoDialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/ui/select';
+} from '@/components//ui/select';
 import { Plus, Search, Filter, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/app/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +25,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/ui/alert-dialog';
+} from '@/components//ui/alert-dialog';
 import {
   fetchProductos,
   fetchCategorias,
@@ -34,7 +34,7 @@ import {
   updateProducto,
   Producto,
   Categoria,
-} from '@/api';
+} from '@/lib/api';
 
 type ProductoTransformado = {
   id: string;

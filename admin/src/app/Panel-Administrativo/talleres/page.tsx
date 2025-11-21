@@ -2,20 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Search, Briefcase } from 'lucide-react';
-import { Button } from '@/ui/button';
-import { Input } from '@/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
+import { Button } from '@/components//ui/button';
+import { Input } from '@/components//ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components//ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { getTalleresAction, getEstadisticasTalleresAction } from '@/actions/talleres';
-import { TalleresTable } from '@/talleres/TalleresTable';
-import { CreateTallerDialog } from '@/talleres/CreateTallerDialog';
-import type { Taller, EstadoTaller, EspecialidadTaller } from '@/api';
+} from '@/components///ui/select';
+import { getTalleresAction, getEstadisticasTalleresAction } from '@/lib/actions/talleres';
+import { TalleresTable } from '@/components/talleres/TalleresTable';
+import { CreateTallerDialog } from '@/components/talleres/CreateTallerDialog';
+import type { Taller, EstadoTaller, EspecialidadTaller } from '@/lib/api';
 
 const especialidadLabels: Record<EspecialidadTaller, string> = {
   CORTE: 'Corte',

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import UseForm from '@/components/usuarios/CreateUsuarioDialog';
-import { useToast } from '@/hooks/use-toast';
+import UseForm from '@/components///usuarios/CreateUsuarioDialog';
+import { useToast } from '@/app/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { getUsuario, updateUsuario, Usuario } from '@/api';
+import { getUsuario, updateUsuario, Usuario } from '@/lib/api';';
 
 export default function EditarUsuarioPage() {
   const router = useRouter();

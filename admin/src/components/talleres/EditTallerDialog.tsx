@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/ui/button';
+import { Button } from '@/components//ui/button';
 import {
   Dialog,
   DialogContent,
@@ -13,19 +13,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/ui/dialog';
-import { Input } from '@/ui/input';
-import { Label } from '@/ui/label';
+} from '@/components//ui/dialog';
+import { Input } from '@/components//ui/input';
+import { Label } from '@/components//ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/ui/select';
-import { useToast } from'@/hooks/use-toast';
-import { updateTallerAction } from '@/actions/talleres';
-import type { Taller, TallerUpdateData, EspecialidadTaller, EstadoTaller } from '@/api';
+} from '@/components//ui/select';
+import { useToast } from'@/app/hooks/use-toast';
+import { updateTallerAction } from '@/lib/actions/talleres';
+import type { Taller, TallerUpdateData, EspecialidadTaller, EstadoTaller } from '@/lib/api';
 
 const tallerSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),

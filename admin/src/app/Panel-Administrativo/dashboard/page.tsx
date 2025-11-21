@@ -1,12 +1,12 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import DashboardAdmin from '@/dashboards/DashboardAdmin';
-import DashboardRecepcionista from '@/dashboards/DashboardRecepcionista';
-import DashboardDiseñador from '@/dashboards/DashboardDiseñador';
-import DashboardCortador from '@/dashboards/DashboardCortador';
-import DashboardAyudante from '@/dashboards/DashboardAyudante';
-import DashboardRepresentante from '@/dashboards/DashboardRepresentante';
+import DashboardAdmin from '@/components/dashboards/DashboardAdmin';
+import DashboardRecepcionista from '@/components/dashboards/DashboardRecepcionista';
+import DashboardDiseñador from '@/components/dashboards/DashboardDiseñador';
+import DashboardCortador from '@/components/dashboards/DashboardCortador';
+import DashboardAyudante from '@/components/dashboards/DashboardAyudante';
+import DashboardRepresentante from '@/components/dashboards/DashboardRepresentante';
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();

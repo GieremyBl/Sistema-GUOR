@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { supabase, getUsuarioCompleto, UsuarioCompleto } from '@/supabase';
+import { supabase, getUsuarioCompleto, UsuarioCompleto } from '@/components/supabase';
 import { useRouter } from 'next/navigation';
 
 export function useCurrentUser() {

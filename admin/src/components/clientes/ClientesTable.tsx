@@ -7,9 +7,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table';
-import { Button } from '@/ui/button';
-import { Badge } from '@/ui/badge';
+} from '@/components//ui/table';
+import { Button } from '@/components//ui/button';
+import { Badge } from '@/components//ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,9 +17,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
+} from '@/components//ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2, Building2, User, Mail, Phone, MapPin } from 'lucide-react';
-import type { Cliente } from '@/api';
+import type { Cliente } from '@/lib/api';
 
 interface ClientesTableProps {
     clientes: Cliente[];

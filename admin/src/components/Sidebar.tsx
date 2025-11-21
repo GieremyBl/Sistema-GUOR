@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/utils';
+import { cn } from '@/components/utils';
 import {
   LayoutDashboard,
   Users,

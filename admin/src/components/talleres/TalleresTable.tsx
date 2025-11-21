@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2, Phone, Mail, Briefcase } from 'lucide-react';
-import { Button } from '@/ui/button';
-import { Badge } from '@/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { deleteTallerAction } from '@/actions/talleres';
-import type { Taller, EstadoTaller, EspecialidadTaller } from '@/api';
+import { Button } from '@/components//ui/button';
+import { Badge } from '@/components//ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components//ui/card';
+import { useToast } from '@/app/hooks/use-toast';
+import { deleteTallerAction } from '@/lib/actions/talleres';
+import type { Taller, EstadoTaller, EspecialidadTaller } from '@/lib/api';
 import { EditTallerDialog } from './EditTallerDialog';
 import { DeleteTallerDialog } from './DeleteTallerDialog';
 

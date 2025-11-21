@@ -1,5 +1,5 @@
 
-import { supabase } from '@/supabase/client';
+import { supabase } from '@/components/supabase/client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 

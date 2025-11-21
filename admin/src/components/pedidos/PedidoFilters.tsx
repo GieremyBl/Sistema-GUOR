@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 // Asegúrate de que estas rutas de importación son correctas
 import { FetchPedidosParams, EstadoPedido, PrioridadPedido } from '@types';
-import { searchClientes } from '@/actions/clientes';
+import { searchClientes } from '@/components/actions/clientes';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/ui/select';
-import { Input } from '@/ui/input';
-import { Button } from '@/ui/button';
-import { Card, CardContent } from '@/ui/card';
-import { Label } from '@/ui/label';
+} from '@/components//ui/select';
+import { Input } from '@/components//ui/input';
+import { Button } from '@/components//ui/button';
+import { Card, CardContent } from '@/components//ui/card';
+import { Label } from '@/components//ui/label';
 import { X, Filter } from 'lucide-react';
 
 interface PedidosFiltersProps {

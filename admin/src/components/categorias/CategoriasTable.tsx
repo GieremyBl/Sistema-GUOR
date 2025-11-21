@@ -1,7 +1,7 @@
 'use client';
 
 import { Edit, Trash2, FolderOpen, Power } from 'lucide-react';
-import { Button } from '@/ui/button';
+import { Button } from '@/components//ui/button';
 import {
   Table,
   TableBody,
@@ -9,8 +9,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table';
-import { Badge } from '@/ui/badge';
+} from '@/components//ui/table';
+import { Badge } from '@/components//ui/badge';
 
 export interface CategoriaTable {
   id: string;

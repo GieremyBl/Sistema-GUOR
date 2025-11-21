@@ -1,124 +1,304 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import EditProductoDialog from '@/productos/EditProductoDialog';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
 import {
-  getProducto,
-  updateProducto,
-  fetchCategorias,
-  Producto,
-  Categoria,
-  ProductoUpdateData,
-} from '@/api';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-export default function EditarProductoPage() {
-  const router = useRouter();
-  const params = useParams();
-  const { toast } = useToast();
-  const [producto, setProducto] = useState<Producto | null>(null);
+interface Producto {
+  id: string | number;
+  nombre: string;
+  descripcion?: string | null;
+  precio: number;
+  categoria_id?: string | number;
+  stock: number;
+  stock_minimo?: number;
+  imagen?: string | null;
+  estado: string;
+  created_at?: string;
+  updated_at?: string | null;
+}
+
+interface Categoria {
+  id: string | number;
+  nombre: string;
+}
+
+interface EditProductoDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  producto: Producto | null;
+  categorias?: Categoria[]; // Ahora es opcional
+  onSubmit: (id: string, data: any) => Promise<void>;
+}
+
+export default function EditProductoDialog({
+  open,
+  onOpenChange,
+  producto,
+  categorias: categoriasExternas, // Renombrar para diferenciar
+  onSubmit,
+}: EditProductoDialogProps) {
+  const [loading, setLoading] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [categoriasLoading, setCategoriasLoading] = useState(false);
 
+  const [formData, setFormData] = useState({
+    nombre: '',
+    descripcion: '',
+    precio: '',
+    categoria_id: '',
+    stock: '',
+    stock_minimo: '',
+    imagen: '',
+    estado: 'activo',
+  });
+
+  // Usar categorías externas si se proporcionan, sino cargar internamente
   useEffect(() => {
-    loadData();
-  }, [params.id]);
+    if (categoriasExternas && categoriasExternas.length > 0) {
+      setCategorias(categoriasExternas);
+    } else if (open && categorias.length === 0) {
+      loadCategorias();
+    }
+  }, [open, categoriasExternas]);
 
-  const loadData = async () => {
-    try {
-      const [productoData, categoriasData] = await Promise.all([
-        getProducto(Number(params.id)),
-        fetchCategorias(),
-      ]);
-
-      setProducto(productoData);
-      setCategorias(categoriasData);
-    } catch (error: any) {
-      console.error('Error cargando datos:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo cargar el producto',
+  // Actualizar formulario cuando cambia el producto
+  useEffect(() => {
+    if (producto && open) {
+      setFormData({
+        nombre: producto.nombre,
+        descripcion: producto.descripcion || '',
+        precio: producto.precio.toString(),
+        categoria_id: producto.categoria_id?.toString() || '',
+        stock: producto.stock.toString(),
+        stock_minimo: (producto.stock_minimo || 0).toString(),
+        imagen: producto.imagen || '',
+        estado: producto.estado || 'activo',
       });
-      router.push('/Panel-Administrativo/productos');
+    }
+  }, [producto, open]);
+
+  const loadCategorias = async () => {
+    setCategoriasLoading(true);
+    try {
+      const response = await fetch('/api/categorias');
+      const data = await response.json();
+      setCategorias(data);
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    } finally {
+      setCategoriasLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!producto) return;
+
+    if (!formData.nombre.trim()) {
+      alert('El nombre es requerido');
+      return;
+    }
+
+    if (!formData.precio || parseFloat(formData.precio) <= 0) {
+      alert('El precio debe ser mayor a 0');
+      return;
+    }
+
+    if (!formData.categoria_id) {
+      alert('Debe seleccionar una categoría');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSubmit(producto.id.toString(), {
+        nombre: formData.nombre.trim(),
+        descripcion: formData.descripcion.trim() || null,
+        precio: parseFloat(formData.precio),
+        categoria_id: Number(formData.categoria_id),
+        stock: Math.max(0, parseInt(formData.stock) || 0),
+        stock_minimo: Math.max(0, parseInt(formData.stock_minimo) || 0),
+        imagen: formData.imagen.trim() || null,
+        estado: formData.estado,
+      });
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error al actualizar producto:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (id: string, data: ProductoUpdateData) => {
-    try {
-      await updateProducto(Number(id), {
-        nombre: data.nombre,
-        descripcion: data.descripcion,
-        precio: data.precio,
-        categoria_id: Number(data.categoria_id),
-        stock: data.stock,
-        stock_minimo: data.stock_minimo,
-        imagen: data.imagen,
-        estado: data.estado,
-      });
-
-      toast({
-        title: 'Éxito',
-        description: 'Producto actualizado correctamente',
-      });
-
-      router.push('/Panel-Administrativo/productos');
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el producto',
-      });
-      throw error;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="container mx-auto py-8 flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Cargando producto...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!producto) {
-    return null;
-  }
-
-  const productoTransformado = {
-    ...producto,
-    id: producto.id.toString(),
-    categoriaId: producto.categoria_id.toString(),
-    stockMinimo: producto.stock_minimo,
-  };
-
-  const categoriasTransformadas = categorias.map((cat) => ({
-    id: cat.id.toString(),
-    nombre: cat.nombre,
-  }));
-
   return (
-    <div className="container mx-auto py-8 px-4 max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Editar Producto</h1>
-        <p className="text-gray-600 mt-1">Modifica los datos del producto</p>
-      </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Editar Producto</DialogTitle>
+          <DialogDescription>
+            Modifica los datos del producto "{producto?.nombre}"
+          </DialogDescription>
+        </DialogHeader>
 
-      <EditProductoDialog
-        open={true}
-        onOpenChange={(open) => !open && router.push('/Panel-Administrativo/productos')}
-        producto={productoTransformado}
-        categorias={categoriasTransformadas}
-        onSubmit={handleSubmit}
-      />
-    </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="nombre">Nombre del Producto *</Label>
+            <Input
+              id="nombre"
+              placeholder="Ingresa el nombre del producto"
+              value={formData.nombre}
+              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="descripcion">Descripción</Label>
+            <Textarea
+              id="descripcion"
+              placeholder="Describe el producto"
+              value={formData.descripcion}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              rows={3}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="precio">Precio (S/) *</Label>
+              <Input
+                id="precio"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={formData.precio}
+                onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="categoria_id">Categoría *</Label>
+              <Select
+                value={formData.categoria_id}
+                onValueChange={(value) => setFormData({ ...formData, categoria_id: value })}
+                disabled={loading || categoriasLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categorias.length > 0 ? (
+                    categorias.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {cat.nombre}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      No hay categorías disponibles
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="stock">Stock</Label>
+              <Input
+                id="stock"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stock_minimo">Stock Mínimo</Label>
+              <Input
+                id="stock_minimo"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={formData.stock_minimo}
+                onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="imagen">URL de Imagen</Label>
+            <Input
+              id="imagen"
+              type="url"
+              placeholder="https://ejemplo.com/imagen.jpg"
+              value={formData.imagen}
+              onChange={(e) => setFormData({ ...formData, imagen: e.target.value })}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="estado">Estado *</Label>
+            <Select
+              value={formData.estado}
+              onValueChange={(value) => setFormData({ ...formData, estado: value })}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="activo">Activo</SelectItem>
+                <SelectItem value="inactivo">Inactivo</SelectItem>
+                <SelectItem value="agotado">Agotado</SelectItem>
+                <SelectItem value="descontinuado">Descontinuado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

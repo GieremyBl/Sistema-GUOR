@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import UserTable from '@/components/usuarios/UsuarioTable';
-import UserFilters from '@/components/usuarios/UsuarioFilters';
-import DeleteUserDialog from '@/components/usuarios/DeleteUsuarioDialog';
-import CreateUsuarioDialog from '@/usuarios/CreateUsuarioDialog';
-import EditUsuarioDialog from '@/usuarios/EditUsuarioDialog';
-import { Button } from '@/ui/button';
+import UserTable from '@/components///usuarios/UsuarioTable';
+import UserFilters from '@/components///usuarios/UsuarioFilters';
+import DeleteUserDialog from '@/components///usuarios/DeleteUsuarioDialog';
+import CreateUsuarioDialog from '@/components/usuarios/CreateUsuarioDialog';
+import EditUsuarioDialog from '@/components/usuarios/EditUsuarioDialog';
+import { Button } from '@/components//ui/button';
 import { Plus } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { fetchUsuarios, deleteUsuario, createUsuario, updateUsuario, Usuario } from '@/api';
+import { useToast } from '@/app/hooks/use-toast';
+import { fetchUsuarios, deleteUsuario, createUsuario, updateUsuario, Usuario } from '@/lib/api';
 
 export default function UsuariosPage() {
   const { toast } = useToast();

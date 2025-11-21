@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/ui/button';
-import { Input } from '@/ui/input';
+import { Button } from '@/components//ui/button';
+import { Input } from '@/components//ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/ui/select';
+} from '@/components//ui/select';
 import {
   Table,
   TableBody,
@@ -18,19 +18,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table';
-import { Badge } from '@/ui/badge';
+} from '@/components//ui/table';
+import { Badge } from '@/components//ui/badge';
 import { Plus, Search, Filter, Eye, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/app/hooks/use-toast';
 import {
   fetchPedidos,
   Pedido,
   EstadoPedido,
   PrioridadPedido,
   FetchPedidosParams,
-} from '@/api';
+} from '@/lib/api';
 import { format } from 'date-fns';
-import { CreatePedidoDialog } from '@/components/pedidos/CreatePedidoDialog';
+import { CreatePedidoDialog } from '@/components///pedidos/CreatePedidoDialog';
 
 type FilterValue = EstadoPedido | PrioridadPedido | 'all' | '';
 

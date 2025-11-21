@@ -8,10 +8,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/ui/dialog';
-import { Badge } from '@/ui/badge';
-import { Separator } from '@/ui/separator';
-import { ScrollArea } from '@/ui/scroll-area';
+} from '@/components//ui/dialog';
+import { Badge } from '@/components//ui/badge';
+import { Separator } from '@/components//ui/separator';
+import { ScrollArea } from '@/components//ui/scroll-area';
 import { 
   Package, 
   Calendar, 

@@ -10,8 +10,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/ui/alert-dialog';
-import type { Taller } from '@/api';
+} from '@/components//ui/alert-dialog';
+import type { Taller } from '@/lib/api';
 
 interface DeleteTallerDialogProps {
   taller: Taller;

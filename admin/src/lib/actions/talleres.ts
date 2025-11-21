@@ -10,7 +10,7 @@ import {
   type FetchTalleresParams,
   type TallerCreateData,
   type TallerUpdateData
-} from '@/api';
+} from '@/lib/api';
 import { revalidatePath } from 'next/cache';
 
 /**
