@@ -1,6 +1,6 @@
 import './config/env';
-import { env } from './config/env';
-import express from 'express';
+import { env } from './config/env'; 
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import authRoutes from './routes/auth.routes';
@@ -14,72 +14,152 @@ import talleresRoutes from './routes/talleres.routes';
 import categoriaRoutes from './routes/categorias.routes';
 import cotizacionesRoutes from './routes/cotizaciones.routes';
 import variantesRoutes from './routes/variantes.routes';
+import * as crypto from 'crypto';
 
 const app = express();
-const port = env.PORT;
+// Render asigna el puerto automáticamente en producción
+const port = process.env.PORT || env.PORT || 10000;
 
-// HEALTH CHECK (debe ir antes de otros middlewares)
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    service: 'GUOR API',
-    timestamp: new Date().toISOString(),
-    environment: env.NODE_ENV || 'development'
-  });
-});
+// ==========================================
+// CONFIGURACIÓN DE SEGURIDAD
+// ==========================================
 
+// Helmet con configuración para APIs
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false, // Desactivar para APIs
+}));
 
-// MIDDLEWARES GLOBALES
-app.use(helmet());
+// Generar JWT Secret si no existe (mejor tomarlo del .env en producción)
+if (!global.JWT_SECRET_KEY) {
+  if (process.env.JWT_SECRET) {
+    global.JWT_SECRET_KEY = process.env.JWT_SECRET;
+    console.log('🔑 JWT Secret cargado desde variables de entorno.');
+  } else {
+    global.JWT_SECRET_KEY = crypto.randomBytes(32).toString('hex');
+    console.warn('⚠️  JWT Secret generado dinámicamente (no recomendado en producción).');
+  }
+}
 
-// CORS configurado para múltiples entornos
+// ==========================================
+// CONFIGURACIÓN DE CORS
+// ==========================================
+
+// Lista completa de orígenes permitidos
 const allowedOrigins = [
   // Desarrollo local
   'http://localhost:3000',
   'http://localhost:3001',
-  // Producción (desde variables de entorno)
+  'http://localhost:5000',
+  
+  // Variables de entorno (Vercel)
   env.ADMIN_URL,
   env.CLIENT_URL,
-].filter(Boolean) as string[];
+  process.env.VERCEL_ADMIN_URL,
+  process.env.VERCEL_CLIENT_URL,
+].filter(Boolean); // Elimina valores undefined/null
+
+console.log('🌐 Orígenes CORS permitidos:', allowedOrigins);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permite requests sin origin (Postman, móviles, etc.)
+    // Permitir requests sin origin (Postman, apps móviles, curl)
     if (!origin) {
-      callback(null, true);
-      return;
+      return callback(null, true);
     }
     
-    // Permite orígenes en la lista
+    // Permitir orígenes específicos de la lista
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-      return;
+      return callback(null, true);
     }
     
-    // Permite GitHub Codespaces (desarrollo)
-    if (origin.includes('.github.dev') || origin.includes('.app.github.dev')) {
-      callback(null, true);
-      return;
+    // Permitir subdominios específicos
+    const allowedDomainPatterns = [
+      /\.vercel\.app$/,          // Cualquier subdominio de Vercel
+      /\.github\.dev$/,          // GitHub Codespaces
+      /\.onrender\.com$/,        // Render (para testing)
+      /localhost:\d+$/,          // Cualquier puerto de localhost
+    ];
+    
+    const isAllowedDomain = allowedDomainPatterns.some(pattern => 
+      pattern.test(origin)
+    );
+    
+    if (isAllowedDomain) {
+      return callback(null, true);
     }
-
-    // Permite previews de Vercel (desarrollo/staging)
-    if (origin.includes('.vercel.app')) {
-      callback(null, true);
-      return;
+    
+    // En desarrollo, permitir todo
+    if (process.env.NODE_ENV === 'development') {
+      console.log('⚠️  DESARROLLO: Permitiendo origin:', origin);
+      return callback(null, true);
     }
-
-    console.warn('⚠️ CORS bloqueado:', origin);
+    
+    // Rechazar otros orígenes en producción
+    console.warn('❌ CORS bloqueado para origin:', origin);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400, // 24 horas - reduce preflight requests
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ==========================================
+// MIDDLEWARES DE PARSEO
+// ==========================================
 
-// RUTAS
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Log de requests en desarrollo
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`📨 ${req.method} ${req.path}`);
+    next();
+  });
+}
+
+// ==========================================
+// RUTAS DE SISTEMA
+// ==========================================
+
+// Health Check - IMPORTANTE para Render
+app.get('/health', (req: Request, res: Response) => {
+  res.status(200).json({ 
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+  });
+});
+
+// Endpoint raíz
+app.get('/', (req: Request, res: Response) => {
+  res.json({ 
+    message: 'Sistema GUOR API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      api: '/api/*',
+    },
+    documentation: 'https://github.com/tu-usuario/sistema-guor',
+  });
+});
+
+// ==========================================
+// RUTAS DE LA API
+// ==========================================
+
 app.use('/api/auth', authRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/usuarios', usuariosRoutes);
@@ -92,22 +172,87 @@ app.use('/api/categorias', categoriaRoutes);
 app.use('/api/cotizaciones', cotizacionesRoutes);
 app.use('/api/variantes', variantesRoutes);
 
-// ============================================
-// RUTA 404
-// ============================================
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `La ruta ${req.originalUrl} no existe`,
+// ==========================================
+// MANEJO DE ERRORES
+// ==========================================
+
+// 404 - Ruta no encontrada
+app.use('*', (req: Request, res: Response) => {
+  res.status(404).json({ 
+    error: 'Ruta no encontrada',
+    path: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString(),
   });
 });
 
-// ============================================
-// INICIAR SERVIDOR
-// ============================================
-app.listen(port, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
-  console.log(`📡 Conectado a Supabase`);
-  console.log(`🌍 Entorno: ${env.NODE_ENV || 'development'}`);
-  console.log(`✅ CORS habilitado para:`, allowedOrigins.filter(Boolean));
+// Error handler global
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  // Log del error
+  console.error('❌ Error:', {
+    message: err.message,
+    stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
+    path: req.path,
+    method: req.method,
+  });
+
+  // Respuesta al cliente
+  const statusCode = err.statusCode || err.status || 500;
+  
+  res.status(statusCode).json({
+    error: process.env.NODE_ENV === 'production' 
+      ? 'Error interno del servidor' 
+      : err.message,
+    ...(process.env.NODE_ENV !== 'production' && { 
+      stack: err.stack,
+      details: err.details,
+    }),
+    timestamp: new Date().toISOString(),
+  });
 });
+
+// ==========================================
+// INICIAR SERVIDOR
+// ==========================================
+
+const server = app.listen(port, () => {
+  console.log('═══════════════════════════════════════');
+  console.log('🚀 Sistema GUOR API');
+  console.log('═══════════════════════════════════════');
+  console.log(`📡 Puerto: ${port}`);
+  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 URL: http://localhost:${port}`);
+  console.log(`✅ Health Check: http://localhost:${port}/health`);
+  console.log(`📊 Base de datos: ${env.DATABASE_URL ? 'Conectada' : 'No configurada'}`);
+  console.log('═══════════════════════════════════════');
+});
+
+// Manejo de shutdown graceful
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM recibido. Cerrando servidor...');
+  server.close(() => {
+    console.log('✅ Servidor cerrado correctamente');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT recibido. Cerrando servidor...');
+  server.close(() => {
+    console.log('✅ Servidor cerrado correctamente');
+    process.exit(0);
+  });
+});
+
+// Manejo de errores no capturados
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection en:', promise, 'razón:', reason);
+  process.exit(1);
+});
+
+export default app;
