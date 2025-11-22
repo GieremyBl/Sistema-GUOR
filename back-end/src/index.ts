@@ -20,9 +20,7 @@ const app = express();
 // Render asigna el puerto automáticamente en producción
 const port = process.env.PORT || env.PORT || 10000;
 
-// ==========================================
 // CONFIGURACIÓN DE SEGURIDAD
-// ==========================================
 
 // Helmet con configuración para APIs
 app.use(helmet({
@@ -41,9 +39,7 @@ if (!global.JWT_SECRET_KEY) {
   }
 }
 
-// ==========================================
 // CONFIGURACIÓN DE CORS
-// ==========================================
 
 // Lista completa de orígenes permitidos
 const allowedOrigins = [
@@ -112,9 +108,7 @@ app.use(cors({
   maxAge: 86400, // 24 horas - reduce preflight requests
 }));
 
-// ==========================================
 // MIDDLEWARES DE PARSEO
-// ==========================================
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -127,9 +121,7 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// ==========================================
 // RUTAS DE SISTEMA
-// ==========================================
 
 // Health Check - IMPORTANTE para Render
 app.get('/health', (req: Request, res: Response) => {
@@ -177,7 +169,7 @@ app.use('/api/variantes', variantesRoutes);
 // ==========================================
 
 // 404 - Ruta no encontrada
-app.use('*', (req: Request, res: Response) => {
+app.use((req: Request, res: Response) => {
   res.status(404).json({ 
     error: 'Ruta no encontrada',
     path: req.originalUrl,
