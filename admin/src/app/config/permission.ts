@@ -1,4 +1,4 @@
-import { Role, Permission } from '@types';
+import { Role, Permission } from '@/app/types';
 
 const rolePermissions: Record<Role, Permission[]> = {
   [Role.ADMINISTRADOR]: [

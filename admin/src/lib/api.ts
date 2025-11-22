@@ -1,5 +1,5 @@
 
-import { supabase } from '@/components/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -483,18 +483,16 @@ async function handleResponse(response: Response) {
 // Funciones del Cliente API para Categorías
 
 // listar todas las categorías
-
 export async function fetchCategorias(): Promise<Categoria[]> {
-  const response = await fetch('/api/categorias');
+  const response = await fetch(`${API_URL}/api/categorias`);
   return handleResponse(response);
 }
 
 // Obtener una categoría por ID
-
 export async function getCategoria(id: number): Promise<Categoria> {
-  const response = await fetch(`/api/categorias/${id}`);
+  const response = await fetch(`${API_URL}/api/categorias/${id}`);
   return handleResponse(response);
-}
+} 
 
 // Crear nueva categoría
 export async function createCategoria(data: CategoriaCreateData) {
@@ -515,18 +513,17 @@ export async function createCategoria(data: CategoriaCreateData) {
 }
 // Actualizar categoría existente
 export async function updateCategoria(id: number, data: CategoriaUpdateData): Promise<Categoria> {
-  const response = await fetch(`/api/categorias/${id}`, {
+  const response = await fetch(`${API_URL}/api/categorias/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
   return handleResponse(response);
 }
-
 // Eliminar categoría
 
 export async function deleteCategoria(id: number): Promise<void> {
-  const response = await fetch(`/api/categorias/${id}`, {
+  const response = await fetch(`${API_URL}/api/categorias/${id}`, {
     method: 'DELETE',
   });
   const result = await handleResponse(response);
@@ -538,7 +535,7 @@ export async function deleteCategoria(id: number): Promise<void> {
 // Crear nuevo producto
 
 export async function createProducto(data: ProductoCreateData): Promise<Producto> {
-  const response = await fetch('/api/productos', {
+  const response = await fetch(`${API_URL}/api/productos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -547,9 +544,8 @@ export async function createProducto(data: ProductoCreateData): Promise<Producto
 }
 
 // Actualizar producto existente
-
 export async function updateProducto(id: number, data: ProductoUpdateData): Promise<Producto> {
-  const response = await fetch(`/api/productos/${id}`, {
+  const response = await fetch(`${API_URL}/api/productos/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -558,9 +554,8 @@ export async function updateProducto(id: number, data: ProductoUpdateData): Prom
 }
 
 // Eliminar producto
-
 export async function deleteProducto(id: number): Promise<void> {
-  const response = await fetch(`/api/productos/${id}`, {
+  const response = await fetch(`${API_URL}/api/productos/${id}`, {
     method: 'DELETE',
   });
   const result = await handleResponse(response);
@@ -568,19 +563,16 @@ export async function deleteProducto(id: number): Promise<void> {
 }
 
 // Obtener un producto por ID
-
 export async function getProducto(id: number): Promise<Producto> {
-  const response = await fetch(`/api/productos/${id}`);
+  const response = await fetch(`${API_URL}/api/productos/${id}`);
   return handleResponse(response);
 }
 
 // Listar todos los productos
-
 export async function fetchProductos(): Promise<Producto[]> {
-  const response = await fetch('/api/productos');
+  const response = await fetch(`${API_URL}/api/productos`);
   return handleResponse(response);
 }
-
 // Funciones del API de Talleres
 
 // Obtener talleres con filtros
