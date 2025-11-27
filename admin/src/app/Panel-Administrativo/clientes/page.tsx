@@ -1,433 +1,298 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ProductosTable from '@/components/productos/ProductosTable';
-import StockDialog from '@/components/productos/StockDialog';
-import CreateProductoDialog from '@/components/productos/CreateProductoDialog';
-import EditProductoDialog from '@/components/productos/EditProductoDialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components//ui/select';
-import { Plus, Search, Filter, AlertTriangle } from 'lucide-react';
+import { Plus, Download, Upload } from 'lucide-react';
+import { ClientesTable } from '@/components/clientes/ClientesTable';
+import CreateClienteDialog from '@/components/clientes/CreateClienteDialog';
+import EditClienteDialog from '@/components/clientes/EditClienteDialog';
+import DeleteConfirmDialog from '@/components/clientes/DeleteConfirmDialog';
+import ClienteFilters from '@/components/clientes/ClienteFilters';
 import { useToast } from '@/app/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components//ui/alert-dialog';
-import {
-  fetchProductos,
-  fetchCategorias,
-  deleteProducto,
-  createProducto,
-  updateProducto,
-  Producto,
-  Categoria,
-} from '@/lib/api';
+import type { Cliente, ClienteCreateInput, ClienteUpdateInput } from '@/lib/api';
+import * as api from '@/lib/api';
 
-type ProductoTransformado = {
-  id: string;
-  nombre: string;
-  descripcion?: string;
-  precio: number;
-  imagen?: string;
-  stock: number;
-  stock_minimo: number;
+interface Filters {
+  busqueda: string;
   estado: string;
-  categoria?: {
-    id: string;
-    nombre: string;
-  };
-};
+}
 
-export default function ProductosPage() {
+export default function ClientesPage() {
   const { toast } = useToast();
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [productoToDelete, setProductoToDelete] = useState<Producto | null>(null);
-  const [productoToStock, setProductoToStock] = useState<Producto | null>(null);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState<Filters>({
+    busqueda: '',
+    estado: '',
+  });
 
-  // Estados de diálogos
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [productoToEdit, setProductoToEdit] = useState<Producto | null>(null);
+  // Estados para diálogos
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
 
-  // Filtros
-  const [busqueda, setBusqueda] = useState('');
-  const [estadoFiltro, setEstadoFiltro] = useState<string>('');
-  const [categoriaFiltro, setCategoriaFiltro] = useState<string>('');
-  const [showStockBajo, setShowStockBajo] = useState(false);
-
-  // Paginación
-  const [page, setPage] = useState(1);
-  const limit = 10;
-
+  // Cargar clientes
   useEffect(() => {
-    loadCategorias();
-    loadProductos();
+    loadClientes();
   }, []);
 
-  const loadCategorias = async () => {
+  const loadClientes = async () => {
+    setIsLoading(true);
     try {
-      const data = await fetchCategorias();
-      setCategorias(data);
-    } catch (error: any) {
-      console.error('Error cargando categorías:', error);
-    }
-  };
-
-  const loadProductos = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchProductos();
-      setProductos(data);
-    } catch (error: any) {
-      console.error('Error cargando productos:', error);
+      const data = await api.getClientes();
+      setClientes(data);
+    } catch (error) {
+      console.error('Error al cargar clientes:', error);
       toast({
-        variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudieron cargar los productos',
+        description: 'No se pudieron cargar los clientes',
+        variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleCreate = async (data: any) => {
+  // Filtrar clientes
+  const clientesFiltrados = clientes.filter((cliente) => {
+    const matchBusqueda = !filters.busqueda || 
+      cliente.razon_social?.toLowerCase().includes(filters.busqueda.toLowerCase()) ||
+      cliente.email.toLowerCase().includes(filters.busqueda.toLowerCase()) ||
+      cliente.ruc?.toString().includes(filters.busqueda);
+
+    const matchEstado = !filters.estado || 
+      (filters.estado === 'ACTIVO' ? cliente.activo : !cliente.activo);
+
+    return matchBusqueda && matchEstado;
+  });
+
+  // Crear cliente
+  const handleCreate = async (data: ClienteCreateInput) => {
     try {
-      await createProducto(data);
+      const newCliente = await api.createCliente(data);
+      setClientes([...clientes, newCliente]);
+      
       toast({
-        title: 'Éxito',
-        description: 'Producto creado correctamente',
+        title: 'Cliente creado',
+        description: 'El cliente ha sido creado exitosamente',
       });
-      setShowCreateDialog(false);
-      await loadProductos();
     } catch (error: any) {
-      console.error('Error creando producto:', error);
+      console.error('Error al crear cliente:', error);
       toast({
-        variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo crear el producto',
+        description: error.message || 'No se pudo crear el cliente',
+        variant: 'destructive',
       });
       throw error;
     }
   };
 
-  const handleEdit = (id: string) => {
-    const producto = productos.find((p) => p.id.toString() === id);
-    if (producto) {
-      setProductoToEdit(producto);
-    }
+  // Editar cliente
+  const handleEdit = (cliente: Cliente) => {
+    setSelectedCliente(cliente);
+    setEditDialogOpen(true);
   };
 
-  const handleUpdate = async (id: string, data: any) => {
+  const handleUpdate = async (id: string, data: ClienteUpdateInput) => {
     try {
-      await updateProducto(Number(id), data);
+      await api.updateCliente(id, data);
+
+      setClientes(clientes.map(c => 
+        c.id.toString() === id 
+          ? { ...c, ...data }
+          : c
+      ));
+
       toast({
-        title: 'Éxito',
-        description: 'Producto actualizado correctamente',
+        title: 'Cliente actualizado',
+        description: 'Los cambios han sido guardados exitosamente',
       });
-      setProductoToEdit(null);
-      await loadProductos();
     } catch (error: any) {
-      console.error('Error actualizando producto:', error);
+      console.error('Error al actualizar cliente:', error);
       toast({
-        variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo actualizar el producto',
+        description: error.message || 'No se pudo actualizar el cliente',
+        variant: 'destructive',
       });
       throw error;
     }
   };
 
-  const handleDelete = (producto: ProductoTransformado) => {
-    const productoOriginal = productos.find((p) => p.id.toString() === producto.id);
-    if (productoOriginal) {
-      setProductoToDelete(productoOriginal);
-    }
+  // Eliminar cliente
+  const handleDelete = (cliente: Cliente) => {
+    setSelectedCliente(cliente);
+    setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (!productoToDelete) return;
+    if (!selectedCliente) return;
 
     try {
-      await deleteProducto(productoToDelete.id);
+      await api.deleteCliente(selectedCliente.id.toString());
+
+      setClientes(clientes.filter(c => c.id !== selectedCliente.id));
+      
       toast({
-        title: 'Éxito',
-        description: 'Producto eliminado correctamente',
+        title: 'Cliente eliminado',
+        description: 'El cliente ha sido eliminado exitosamente',
       });
-      await loadProductos();
-      setProductoToDelete(null);
+      
+      setDeleteDialogOpen(false);
+      setSelectedCliente(null);
     } catch (error: any) {
-      console.error('Error eliminando producto:', error);
+      console.error('Error al eliminar cliente:', error);
       toast({
-        variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo eliminar el producto',
+        description: error.message || 'No se pudo eliminar el cliente',
+        variant: 'destructive',
       });
     }
   };
 
-  const handleManageStock = (producto: ProductoTransformado) => {
-    const productoOriginal = productos.find((p) => p.id.toString() === producto.id);
-    if (productoOriginal) {
-      setProductoToStock(productoOriginal);
-    }
-  };
-
-  const handleUpdateStock = async (
-    id: string,
-    cantidad: number,
-    operacion: 'agregar' | 'reducir' | 'establecer'
-  ) => {
+  // Toggle activo
+  const handleToggleActivo = async (cliente: Cliente) => {
     try {
-      const producto = productos.find((p) => p.id.toString() === id);
-      if (!producto) return;
+      await api.updateCliente(cliente.id.toString(), { activo: !cliente.activo });
 
-      let nuevoStock = producto.stock;
-      if (operacion === 'agregar') {
-        nuevoStock += cantidad;
-      } else if (operacion === 'reducir') {
-        nuevoStock = Math.max(0, nuevoStock - cantidad);
-      } else {
-        nuevoStock = cantidad;
-      }
-
-      const response = await fetch(`/api/productos/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stock: nuevoStock }),
-      });
-
-      if (!response.ok) throw new Error('Error al actualizar stock');
+      setClientes(clientes.map(c => 
+        c.id === cliente.id 
+          ? { ...c, activo: !c.activo }
+          : c
+      ));
 
       toast({
-        title: 'Éxito',
-        description: 'Stock actualizado correctamente',
+        title: cliente.activo ? 'Cliente desactivado' : 'Cliente activado',
+        description: `El cliente ha sido ${cliente.activo ? 'desactivado' : 'activado'} exitosamente`,
       });
-
-      await loadProductos();
     } catch (error: any) {
-      console.error('Error actualizando stock:', error);
+      console.error('Error al cambiar estado:', error);
       toast({
-        variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo actualizar el stock',
+        description: 'No se pudo cambiar el estado del cliente',
+        variant: 'destructive',
       });
-      throw error;
     }
   };
-
-  const limpiarFiltros = () => {
-    setBusqueda('');
-    setEstadoFiltro('all');
-    setCategoriaFiltro('all');
-    setShowStockBajo(false);
-    setPage(1);
-  };
-
-  let productosFiltrados = productos.filter((producto) => {
-    const matchBusqueda =
-      !busqueda ||
-      producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      producto.descripcion?.toLowerCase().includes(busqueda.toLowerCase());
-
-    const matchEstado = !estadoFiltro || estadoFiltro === 'all' || producto.estado === estadoFiltro;
-
-    const matchCategoria =
-      !categoriaFiltro || categoriaFiltro === 'all' || producto.categoria_id.toString() === categoriaFiltro;
-
-    const matchStockBajo = !showStockBajo || producto.stock <= producto.stock_minimo;
-
-    return matchBusqueda && matchEstado && matchCategoria && matchStockBajo;
-  });
-
-  const total = productosFiltrados.length;
-  const totalPages = Math.ceil(total / limit);
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const productosPaginados = productosFiltrados.slice(startIndex, endIndex);
-
-  const productosTransformados: ProductoTransformado[] = productosPaginados.map((p) => ({
-    id: p.id.toString(),
-    nombre: p.nombre,
-    descripcion: p.descripcion ?? undefined,
-    precio: p.precio,
-    imagen: p.imagen ?? undefined,
-    stock: p.stock,
-    stock_minimo: p.stock_minimo,
-    estado: p.estado,
-    categoria_id: p.categoria_id,
-    created_at: p.created_at,
-    updated_at: p.updated_at ?? undefined,
-    categoria: p.categoria
-      ? {
-          id: p.categoria_id.toString(),
-          nombre: p.categoria.nombre,
-        }
-      : undefined,
-  }));
 
   return (
-    <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Productos</h1>
-          <p className="text-gray-600 mt-1">
-            Administra el catálogo de productos ({total} total)
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            Gestión de Clientes
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Gestiona tu base de clientes y su información de contacto
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Producto
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Cliente
+          </Button>
+        </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Buscar productos..."
-            value={busqueda}
-            onChange={(e) => {
-              setBusqueda(e.target.value);
-              setPage(1);
-            }}
-            className="pl-10"
-          />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-6 rounded-lg border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Total Clientes
+              </p>
+              <p className="text-3xl font-bold mt-2">{clientes.length}</p>
+            </div>
+            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+          </div>
         </div>
 
-        <Select
-          value={estadoFiltro}
-          onValueChange={(value) => {
-            setEstadoFiltro(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="activo">Activo</SelectItem>
-            <SelectItem value="inactivo">Inactivo</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="bg-white p-6 rounded-lg border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Clientes Activos
+              </p>
+              <p className="text-3xl font-bold mt-2">
+                {clientes.filter(c => c.activo).length}
+              </p>
+            </div>
+            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+          </div>
+        </div>
 
-        <Select
-          value={categoriaFiltro}
-          onValueChange={(value) => {
-            setCategoriaFiltro(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="Categoría" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas las categorías</SelectItem>
-            {categorias.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id.toString()}>
-                {cat.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button
-          variant={showStockBajo ? 'default' : 'outline'}
-          onClick={() => {
-            setShowStockBajo(!showStockBajo);
-            setPage(1);
-          }}
-        >
-          <AlertTriangle className="mr-2 h-4 w-4" />
-          Stock Bajo
-        </Button>
-
-        {(busqueda || estadoFiltro || categoriaFiltro || showStockBajo) && (
-          <Button variant="ghost" onClick={limpiarFiltros}>
-            <Filter className="mr-2 h-4 w-4" />
-            Limpiar
-          </Button>
-        )}
+        <div className="bg-white p-6 rounded-lg border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Clientes Inactivos
+              </p>
+              <p className="text-3xl font-bold mt-2">
+                {clientes.filter(c => !c.activo).length}
+              </p>
+            </div>
+            <div className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center">
+              <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <ProductosTable
-        productos={productosTransformados}
-        loading={loading}
+      {/* Filtros */}
+      <ClienteFilters filters={filters} onFiltersChange={setFilters} />
+
+      {/* Tabla */}
+      <ClientesTable
+        clientes={clientesFiltrados}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onManageStock={handleManageStock}
-        pagination={{
-          page,
-          limit,
-          total,
-          totalPages,
-        }}
-        onPageChange={setPage}
+        onToggleActivo={handleToggleActivo}
+        isLoading={isLoading}
       />
 
-      {/* Diálogo de creación */}
-      <CreateProductoDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
+      {/* Diálogos */}
+      <CreateClienteDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
         onSubmit={handleCreate}
       />
 
-      {/* Diálogo de edición */}
-      {productoToEdit && (
-        <EditProductoDialog
-          open={!!productoToEdit}
-          onOpenChange={(open) => !open && setProductoToEdit(null)}
-          producto={productoToEdit}
-          onSubmit={handleUpdate}
-        />
-      )}
+      <EditClienteDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        cliente={selectedCliente}
+        onSubmit={handleUpdate}
+      />
 
-      {/* Diálogo de Stock */}
-      {productoToStock && (
-        <StockDialog
-          open={!!productoToStock}
-          onOpenChange={(open) => !open && setProductoToStock(null)}
-          producto={{
-            id: productoToStock.id.toString(),
-            nombre: productoToStock.nombre,
-            stock: productoToStock.stock,
-          }}
-          onSubmit={handleUpdateStock}
-        />
-      )}
-
-      {/* Diálogo de eliminación */}
-      <AlertDialog open={!!productoToDelete} onOpenChange={() => setProductoToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el producto{' '}
-              <strong>{productoToDelete?.nombre}</strong>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="¿Eliminar cliente?"
+        description={`¿Estás seguro de que deseas eliminar a "${selectedCliente?.razon_social || selectedCliente?.email}"? Esta acción no se puede deshacer.`}
+      />
+      </div>
     </div>
   );
 }

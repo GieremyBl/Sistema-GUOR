@@ -675,3 +675,98 @@ export async function getEstadisticasTalleres(): Promise<EstadisticasTalleres> {
   return result.data;
 }
 
+// Funciones del API de Clientes
+
+// Obtener todos los clientes
+export async function getClientes(): Promise<Cliente[]> {
+  const { data, error } = await supabase
+    .from('clientes')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+// Obtener un cliente por ID
+export async function getCliente(id: string): Promise<Cliente> {
+  const { data, error } = await supabase
+    .from('clientes')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Crear nuevo cliente
+export async function createCliente(clienteData: ClienteCreateInput): Promise<Cliente> {
+  const { data, error } = await supabase
+    .from('clientes')
+    .insert({
+      ...clienteData,
+      activo: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) {
+    // Manejo de errores específicos de Supabase
+    if (error.code === '23505') {
+      throw new Error('Ya existe un cliente con ese email');
+    }
+    throw new Error(error.message);
+  }
+  
+  return data;
+}
+
+// Actualizar cliente existente
+export async function updateCliente(id: string, clienteData: ClienteUpdateInput): Promise<Cliente> {
+  const { data, error } = await supabase
+    .from('clientes')
+    .update({
+      ...clienteData,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Ya existe un cliente con ese email');
+    }
+    throw new Error(error.message);
+  }
+  
+  return data;
+}
+
+// Eliminar cliente
+export async function deleteCliente(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('clientes')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+// Buscar clientes (opcional, para búsquedas avanzadas)
+export async function searchClientes(busqueda: string): Promise<Cliente[]> {
+  const { data, error } = await supabase
+    .from('clientes')
+    .select('*')
+    .or(`razon_social.ilike.%${busqueda}%,email.ilike.%${busqueda}%,ruc.ilike.%${busqueda}%`)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+

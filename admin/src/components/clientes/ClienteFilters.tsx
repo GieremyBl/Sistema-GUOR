@@ -13,29 +13,27 @@ import {
 
 interface Filters {
   busqueda: string;
-  rol: string;
   estado: string;
 }
 
-interface UserFiltersProps {
+interface ClienteFiltersProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
 }
 
-export default function UserFilters({ filters, onFiltersChange }: UserFiltersProps) {
+export default function ClienteFilters({ filters, onFiltersChange }: ClienteFiltersProps) {
   const handleReset = () => {
     onFiltersChange({
       busqueda: '',
-      rol: '',
       estado: '',
     });
   };
 
-  const hasActiveFilters = filters.busqueda || filters.rol || filters.estado;
+  const hasActiveFilters = filters.busqueda || filters.estado;
 
   return (
     <div className="bg-white p-6 rounded-lg border mb-6 space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Búsqueda */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -45,7 +43,7 @@ export default function UserFilters({ filters, onFiltersChange }: UserFiltersPro
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
-              placeholder="Buscar por nombre o email..."
+              placeholder="Buscar por nombre, email o RUC..."
               value={filters.busqueda}
               onChange={(e) =>
                 onFiltersChange({ ...filters, busqueda: e.target.value })
@@ -53,49 +51,6 @@ export default function UserFilters({ filters, onFiltersChange }: UserFiltersPro
               className="pl-10"
             />
           </div>
-        </div>
-
-        {/* Filtro por Rol */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Rol
-          </label>
-          <Select
-            value={filters.rol || 'todos'}
-            onValueChange={(value) =>
-              onFiltersChange({
-                ...filters,
-                rol: value === 'todos' ? '' : value,
-              })
-            }
-          >
-            <SelectTrigger className="cursor-pointer">
-              <SelectValue placeholder="Todos los roles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos" className="cursor-pointer">
-                Todos los roles
-              </SelectItem>
-              <SelectItem value="administrador" className="cursor-pointer">
-                Administrador
-              </SelectItem>
-              <SelectItem value="recepcionista" className="cursor-pointer">
-                Recepcionista
-              </SelectItem>
-              <SelectItem value="diseñador" className="cursor-pointer">
-                Diseñador
-              </SelectItem>
-              <SelectItem value="cortador" className="cursor-pointer">
-                Cortador
-              </SelectItem>
-              <SelectItem value="ayudante" className="cursor-pointer">
-                Ayudante
-              </SelectItem>
-              <SelectItem value="representante_taller" className="cursor-pointer">
-                Representante Taller
-              </SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Filtro por Estado */}

@@ -6,11 +6,10 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components//ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
 
 interface Usuario {
@@ -51,20 +50,22 @@ export default function DeleteUserDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta acción no se puede deshacer. Se eliminará permanentemente el usuario:
-            <div className="mt-4 p-3 bg-gray-50 rounded-md">
+          <div className="text-sm text-muted-foreground space-y-4">
+            <p>
+              Esta acción no se puede deshacer. Se eliminará permanentemente el usuario:
+            </p>
+            <div className="p-3 bg-gray-50 rounded-md space-y-1">
               <p className="font-medium text-gray-900">{user?.nombre_completo}</p>
               <p className="text-sm text-gray-600">{user?.email}</p>
             </div>
-          </AlertDialogDescription>
+          </div>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={loading}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
           >
             {loading ? (
               <>

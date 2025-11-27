@@ -1,7 +1,7 @@
 'use client';
 
 import { Edit, Trash2, Mail, Phone, User } from 'lucide-react';
-import { Button } from '@/components//ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -9,8 +9,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components//ui/table';
-import { Badge } from '@/components//ui/badge';
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 interface Usuario {
   id: string;
@@ -132,14 +132,19 @@ export default function UserTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => onEdit(usuario.id)}
+                      className="cursor-pointer hover:bg-gray-100 transition-colors"
+                      title="Editar usuario"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
+                    
+                    {/* ✅ Botón de Eliminar con cursor-pointer */}
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => onDelete(usuario)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                      title="Eliminar usuario"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -170,6 +175,7 @@ export default function UserTable({
             size="sm"
             onClick={() => onPageChange(pagination.page - 1)}
             disabled={pagination.page === 1}
+            className="cursor-pointer disabled:cursor-not-allowed"
           >
             Anterior
           </Button>
@@ -178,6 +184,7 @@ export default function UserTable({
             size="sm"
             onClick={() => onPageChange(pagination.page + 1)}
             disabled={pagination.page >= pagination.totalPages}
+            className="cursor-pointer disabled:cursor-not-allowed"
           >
             Siguiente
           </Button>

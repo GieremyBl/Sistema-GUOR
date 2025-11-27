@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components//ui/select';
-import type { Usuario } from '@/lib/api';';
+import type { Usuario } from '@/lib/api';
 
 interface EditUsuarioDialogProps {
   open: boolean;

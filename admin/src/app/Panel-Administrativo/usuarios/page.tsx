@@ -1,16 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import UserTable from '@/components///usuarios/UsuarioTable';
-import UserFilters from '@/components///usuarios/UsuarioFilters';
-import DeleteUserDialog from '@/components///usuarios/DeleteUsuarioDialog';
+import UserTable from '@/components/usuarios/UsuarioTable';
+import UserFilters from '@/components/usuarios/UsuarioFilters';
+import DeleteUserDialog from '@/components/usuarios/DeleteUsuarioDialog';
 import CreateUsuarioDialog from '@/components/usuarios/CreateUsuarioDialog';
 import EditUsuarioDialog from '@/components/usuarios/EditUsuarioDialog';
-import { Button } from '@/components//ui/button';
-import { Plus } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { Button } from '@/components/ui/button';
+import { Plus, Download, Upload, FileSpreadsheet, FileText } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/app/hooks/use-toast';
 import { fetchUsuarios, deleteUsuario, createUsuario, updateUsuario, Usuario } from '@/lib/api';
-
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => void;
+  }
+}
 export default function UsuariosPage() {
   const { toast } = useToast();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -30,6 +43,7 @@ export default function UsuariosPage() {
   // Estados de diálogos
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [usuarioToEdit, setUsuarioToEdit] = useState<Usuario | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<Usuario | null>(null);
 
   useEffect(() => {
@@ -69,6 +83,7 @@ export default function UsuariosPage() {
     const usuario = usuarios.find((u) => u.id.toString() === id);
     if (usuario) {
       setUsuarioToEdit(usuario);
+      setIsEditDialogOpen(true);
     }
   };
 
@@ -100,6 +115,7 @@ export default function UsuariosPage() {
         description: 'Usuario actualizado correctamente',
       });
       setUsuarioToEdit(null);
+      setIsEditDialogOpen(false);
       await loadUsuarios();
     } catch (error: any) {
       console.error('Error actualizando usuario:', error);
@@ -142,19 +158,190 @@ export default function UsuariosPage() {
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
+  // Función para exportar a Excel
+  const exportToExcel = () => {
+    try {
+      // Crear datos para Excel
+      const data = usuarios.map(usuario => ({
+        'ID': usuario.id,
+        'Nombre Completo': usuario.nombre_completo,
+        'Email': usuario.email,
+        'Teléfono': usuario.telefono || 'N/A',
+        'Rol': usuario.rol,
+        'Estado': usuario.estado,
+        'Fecha de Creación': new Date(usuario.created_at).toLocaleDateString('es-PE'),
+      }));
+
+      // Crear hoja de cálculo
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+
+      // Ajustar ancho de columnas
+      const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre Completo'].length), 10);
+      worksheet['!cols'] = [
+        { wch: 10 }, // ID
+        { wch: maxWidth }, // Nombre
+        { wch: 30 }, // Email
+        { wch: 15 }, // Teléfono
+        { wch: 20 }, // Rol
+        { wch: 15 }, // Estado
+        { wch: 20 }, // Fecha
+      ];
+
+      // Descargar archivo
+      XLSX.writeFile(workbook, `usuarios_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      toast({
+        title: 'Éxito',
+        description: 'Usuarios exportados a Excel correctamente',
+      });
+    } catch (error) {
+      console.error('Error exportando a Excel:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo exportar a Excel',
+      });
+    }
+  };
+
+  // Función para exportar a PDF
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Título
+      doc.setFontSize(18);
+      doc.text('Lista de Usuarios', 14, 20);
+      
+      // Fecha de generación
+      doc.setFontSize(10);
+      doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
+
+      // Preparar datos para la tabla
+      const tableData = usuarios.map(usuario => [
+        usuario.nombre_completo,
+        usuario.email,
+        usuario.telefono || 'N/A',
+        usuario.rol,
+        usuario.estado,
+      ]);
+
+      // Crear tabla
+      (doc as any).autoTable({
+        head: [['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado']],
+        body: tableData,
+        startY: 35,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+
+      // Guardar PDF
+      doc.save(`usuarios_${new Date().toISOString().split('T')[0]}.pdf`);
+
+      toast({
+        title: 'Éxito',
+        description: 'Usuarios exportados a PDF correctamente',
+      });
+    } catch (error) {
+      console.error('Error exportando a PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo exportar a PDF',
+      });
+    }
+  };
+
+  // Función para importar desde Excel
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        console.log('Datos importados:', jsonData);
+        
+        toast({
+          title: 'Éxito',
+          description: `Se importaron ${jsonData.length} registros`,
+        });
+
+        // Aquí puedes procesar los datos importados
+        // Por ejemplo, crear usuarios en batch
+        
+      } catch (error) {
+        console.error('Error importando archivo:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'No se pudo importar el archivo',
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    
+    // Limpiar el input
+    event.target.value = '';
+  };
+
   return (
     <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
-          <p className="text-gray-600 mt-1">
-            Administra los usuarios del sistema
-          </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Usuario
-        </Button>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            id="import-file"
+            accept=".xlsx,.xls"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => document.getElementById('import-file')?.click()}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
+          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToExcel} className="cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                Exportar a Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF} className="cursor-pointer">
+                <FileText className="h-4 w-4 mr-2 text-red-600" />
+                Exportar a PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            className="cursor-pointer">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Usuario
+          </Button>
+        </div>
       </div>
 
       <UserFilters filters={filters} onFiltersChange={handleFiltersChange} />
@@ -175,15 +362,15 @@ export default function UsuariosPage() {
         onSubmit={handleCreate}
       />
 
-      {/* Diálogo de edición */}
-      {usuarioToEdit && (
-        <EditUsuarioDialog
-          open={!!usuarioToEdit}
-          onOpenChange={(open) => !open && setUsuarioToEdit(null)}
-          usuario={usuarioToEdit}
-          onSubmit={handleUpdate}
-        />
-      )}
+      <EditUsuarioDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setUsuarioToEdit(null);
+        }}
+        usuario={usuarioToEdit}
+        onSubmit={handleUpdate}
+      />
 
       {/* Diálogo de eliminación */}
       <DeleteUserDialog

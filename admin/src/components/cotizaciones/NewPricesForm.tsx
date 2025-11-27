@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/ui/button";
-import { Input } from "@/ui/input";
-import { Label } from "@/ui/label";
-import { Textarea } from "@/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/ui/dialog";
+} from "@/components/ui/dialog";
 import { Plus, X, Info } from "lucide-react";
-import { Alert, AlertDescription } from "@/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Modelo {
   id: string;

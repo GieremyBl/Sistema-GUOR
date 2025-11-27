@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/components/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 import { Shield, Users, CheckCircle2 } from 'lucide-react';
 
 interface RoleCount {

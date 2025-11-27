@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/components/utils';
+import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   Users,
@@ -65,11 +65,6 @@ const navItems: NavItem[] = [
         icon: Users,
       },
       {
-        title: 'Nuevo Usuario',
-        href: '/Panel-Administrativo/usuarios/nuevo',
-        icon: UserPlus,
-      },
-      {
         title: 'Roles y Permisos',
         href: '/Panel-Administrativo/usuarios/roles',
         icon: Shield,
@@ -86,27 +81,17 @@ const navItems: NavItem[] = [
         href: '/Panel-Administrativo/clientes',
         icon: Users,
       },
-      {
-        title: 'Nuevo Cliente',
-        href: '/Panel-Administrativo/clientes/nuevo',
-        icon: UserPlus,
-      },
     ],
   },
   {
     title: 'Pedidos',
     icon: ShoppingCart,
-    roles: ['administrador', 'recepcionista', 'diseñador', 'cortador'],
+    roles: ['administrador', 'recepcionista', 'diseñador', 'cortador','cortador'],
     subItems: [
       {
         title: 'Todos los Pedidos',
         href: '/Panel-Administrativo/pedidos',
         icon: ShoppingCart,
-      },
-      {
-        title: 'Nuevo Pedido',
-        href: '/Panel-Administrativo/pedidos/nuevo',
-        icon: Plus, // ← AGREGAR ICONO
       },
       {
         title: 'Historial',
@@ -126,19 +111,9 @@ const navItems: NavItem[] = [
         icon: Package,
       },
       {
-        title: 'Nuevo Producto',
-        href: '/Panel-Administrativo/productos/nuevo',
-        icon: Plus,
-      },
-      {
         title: 'Categorías',
         href: '/Panel-Administrativo/categorias',
         icon: Tags,
-      },
-      {
-        title: 'Nueva Categoría',
-        href: '/Panel-Administrativo/categorias/nueva',
-        icon: Plus, 
       },
     ],
   },
@@ -167,13 +142,13 @@ const navItems: NavItem[] = [
   {
     title: 'Logística',
     icon: Truck,
-    roles: ['administrador', 'diseñador'],
+    roles: ['administrador', 'diseñador','ayudante'],
     subItems: [
       {
         title: 'Inventario',
         href: '/Panel-Administrativo/inventario',
         icon: Boxes,
-      },
+      },  
       {
         title: 'Despachos',
         href: '/Panel-Administrativo/despachos',
