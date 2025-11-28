@@ -1,298 +1,384 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import UserTable from '@/components/usuarios/UsuarioTable';
+import UserFilters from '@/components/usuarios/UsuarioFilters';
+import DeleteUserDialog from '@/components/usuarios/DeleteUsuarioDialog';
+import CreateUsuarioDialog from '@/components/usuarios/CreateUsuarioDialog';
+import EditUsuarioDialog from '@/components/usuarios/EditUsuarioDialog';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, Upload } from 'lucide-react';
-import { ClientesTable } from '@/components/clientes/ClientesTable';
-import CreateClienteDialog from '@/components/clientes/CreateClienteDialog';
-import EditClienteDialog from '@/components/clientes/EditClienteDialog';
-import DeleteConfirmDialog from '@/components/clientes/DeleteConfirmDialog';
-import ClienteFilters from '@/components/clientes/ClienteFilters';
+import { Plus, Download, Upload, FileSpreadsheet, FileText } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/app/hooks/use-toast';
-import type { Cliente, ClienteCreateInput, ClienteUpdateInput } from '@/lib/api';
-import * as api from '@/lib/api';
-
-interface Filters {
-  busqueda: string;
-  estado: string;
+import { fetchUsuarios, deleteUsuario, createUsuario, updateUsuario, Usuario } from '@/lib/api';
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => void;
+  }
 }
-
-export default function ClientesPage() {
+export default function UsuariosPage() {
   const { toast } = useToast();
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [filters, setFilters] = useState<Filters>({
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
     busqueda: '',
+    rol: '',
     estado: '',
   });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+  
+  // Estados de diálogos
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [usuarioToEdit, setUsuarioToEdit] = useState<Usuario | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<Usuario | null>(null);
 
-  // Estados para diálogos
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
-
-  // Cargar clientes
   useEffect(() => {
-    loadClientes();
-  }, []);
+    loadUsuarios();
+  }, [filters, pagination.page]);
 
-  const loadClientes = async () => {
-    setIsLoading(true);
+  const loadUsuarios = async () => {
+    setLoading(true);
     try {
-      const data = await api.getClientes();
-      setClientes(data);
+      const data = await fetchUsuarios({
+        page: pagination.page,
+        limit: pagination.limit,
+        busqueda: filters.busqueda || undefined,
+        rol: filters.rol || undefined,
+        estado: filters.estado || undefined,
+      });
+
+      setUsuarios(data.usuarios);
+      setPagination((prev) => ({
+        ...prev,
+        total: data.total,
+        totalPages: data.totalPages,
+      }));
     } catch (error) {
-      console.error('Error al cargar clientes:', error);
+      console.error('Error cargando usuarios:', error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los clientes',
         variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudieron cargar los usuarios',
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // Filtrar clientes
-  const clientesFiltrados = clientes.filter((cliente) => {
-    const matchBusqueda = !filters.busqueda || 
-      cliente.razon_social?.toLowerCase().includes(filters.busqueda.toLowerCase()) ||
-      cliente.email.toLowerCase().includes(filters.busqueda.toLowerCase()) ||
-      cliente.ruc?.toString().includes(filters.busqueda);
+  const handleEdit = (id: string) => {
+    const usuario = usuarios.find((u) => u.id.toString() === id);
+    if (usuario) {
+      setUsuarioToEdit(usuario);
+      setIsEditDialogOpen(true);
+    }
+  };
 
-    const matchEstado = !filters.estado || 
-      (filters.estado === 'ACTIVO' ? cliente.activo : !cliente.activo);
-
-    return matchBusqueda && matchEstado;
-  });
-
-  // Crear cliente
-  const handleCreate = async (data: ClienteCreateInput) => {
+  const handleCreate = async (data: any) => {
     try {
-      const newCliente = await api.createCliente(data);
-      setClientes([...clientes, newCliente]);
-      
+      await createUsuario(data);
       toast({
-        title: 'Cliente creado',
-        description: 'El cliente ha sido creado exitosamente',
+        title: 'Éxito',
+        description: 'Usuario creado correctamente',
       });
+      setShowCreateDialog(false);
+      await loadUsuarios();
     } catch (error: any) {
-      console.error('Error al crear cliente:', error);
+      console.error('Error creando usuario:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'No se pudo crear el cliente',
         variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo crear el usuario',
       });
       throw error;
     }
   };
 
-  // Editar cliente
-  const handleEdit = (cliente: Cliente) => {
-    setSelectedCliente(cliente);
-    setEditDialogOpen(true);
-  };
-
-  const handleUpdate = async (id: string, data: ClienteUpdateInput) => {
+  const handleUpdate = async (id: string, data: any) => {
     try {
-      await api.updateCliente(id, data);
-
-      setClientes(clientes.map(c => 
-        c.id.toString() === id 
-          ? { ...c, ...data }
-          : c
-      ));
-
+      await updateUsuario(id, data);
       toast({
-        title: 'Cliente actualizado',
-        description: 'Los cambios han sido guardados exitosamente',
+        title: 'Éxito',
+        description: 'Usuario actualizado correctamente',
       });
+      setUsuarioToEdit(null);
+      setIsEditDialogOpen(false);
+      await loadUsuarios();
     } catch (error: any) {
-      console.error('Error al actualizar cliente:', error);
+      console.error('Error actualizando usuario:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el cliente',
         variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo actualizar el usuario',
       });
       throw error;
     }
   };
 
-  // Eliminar cliente
-  const handleDelete = (cliente: Cliente) => {
-    setSelectedCliente(cliente);
-    setDeleteDialogOpen(true);
+  const handleDelete = (usuario: Usuario) => {
+    setUserToDelete(usuario);
   };
 
   const confirmDelete = async () => {
-    if (!selectedCliente) return;
+    if (!userToDelete) return;
 
     try {
-      await api.deleteCliente(selectedCliente.id.toString());
-
-      setClientes(clientes.filter(c => c.id !== selectedCliente.id));
-      
+      await deleteUsuario(userToDelete.id);
       toast({
-        title: 'Cliente eliminado',
-        description: 'El cliente ha sido eliminado exitosamente',
+        title: 'Éxito',
+        description: 'Usuario eliminado correctamente',
       });
-      
-      setDeleteDialogOpen(false);
-      setSelectedCliente(null);
+      await loadUsuarios();
+      setUserToDelete(null);
     } catch (error: any) {
-      console.error('Error al eliminar cliente:', error);
+      console.error('Error eliminando usuario:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'No se pudo eliminar el cliente',
         variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo eliminar el usuario',
       });
     }
   };
 
-  // Toggle activo
-  const handleToggleActivo = async (cliente: Cliente) => {
+  const handleFiltersChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  // Función para exportar a Excel
+  const exportToExcel = () => {
     try {
-      await api.updateCliente(cliente.id.toString(), { activo: !cliente.activo });
+      // Crear datos para Excel
+      const data = usuarios.map(usuario => ({
+        'ID': usuario.id,
+        'Nombre Completo': usuario.nombre_completo,
+        'Email': usuario.email,
+        'Teléfono': usuario.telefono || 'N/A',
+        'Rol': usuario.rol,
+        'Estado': usuario.estado,
+        'Fecha de Creación': new Date(usuario.created_at).toLocaleDateString('es-PE'),
+      }));
 
-      setClientes(clientes.map(c => 
-        c.id === cliente.id 
-          ? { ...c, activo: !c.activo }
-          : c
-      ));
+      // Crear hoja de cálculo
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+
+      // Ajustar ancho de columnas
+      const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre Completo'].length), 10);
+      worksheet['!cols'] = [
+        { wch: 10 }, // ID
+        { wch: maxWidth }, // Nombre
+        { wch: 30 }, // Email
+        { wch: 15 }, // Teléfono
+        { wch: 20 }, // Rol
+        { wch: 15 }, // Estado
+        { wch: 20 }, // Fecha
+      ];
+
+      // Descargar archivo
+      XLSX.writeFile(workbook, `usuarios_${new Date().toISOString().split('T')[0]}.xlsx`);
 
       toast({
-        title: cliente.activo ? 'Cliente desactivado' : 'Cliente activado',
-        description: `El cliente ha sido ${cliente.activo ? 'desactivado' : 'activado'} exitosamente`,
+        title: 'Éxito',
+        description: 'Usuarios exportados a Excel correctamente',
       });
-    } catch (error: any) {
-      console.error('Error al cambiar estado:', error);
+    } catch (error) {
+      console.error('Error exportando a Excel:', error);
       toast({
-        title: 'Error',
-        description: 'No se pudo cambiar el estado del cliente',
         variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo exportar a Excel',
       });
     }
+  };
+
+  // Función para exportar a PDF
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Título
+      doc.setFontSize(18);
+      doc.text('Lista de Usuarios', 14, 20);
+      
+      // Fecha de generación
+      doc.setFontSize(10);
+      doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
+
+      // Preparar datos para la tabla
+      const tableData = usuarios.map(usuario => [
+        usuario.nombre_completo,
+        usuario.email,
+        usuario.telefono || 'N/A',
+        usuario.rol,
+        usuario.estado,
+      ]);
+
+      // Crear tabla
+      (doc as any).autoTable({
+        head: [['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado']],
+        body: tableData,
+        startY: 35,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+
+      // Guardar PDF
+      doc.save(`usuarios_${new Date().toISOString().split('T')[0]}.pdf`);
+
+      toast({
+        title: 'Éxito',
+        description: 'Usuarios exportados a PDF correctamente',
+      });
+    } catch (error) {
+      console.error('Error exportando a PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo exportar a PDF',
+      });
+    }
+  };
+
+  // Función para importar desde Excel
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        console.log('Datos importados:', jsonData);
+        
+        toast({
+          title: 'Éxito',
+          description: `Se importaron ${jsonData.length} registros`,
+        });
+
+        // Aquí puedes procesar los datos importados
+        // Por ejemplo, crear usuarios en batch
+        
+      } catch (error) {
+        console.error('Error importando archivo:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'No se pudo importar el archivo',
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    
+    // Limpiar el input
+    event.target.value = '';
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            Gestión de Clientes
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Gestiona tu base de clientes y su información de contacto
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <input
+            type="file"
+            id="import-file"
+            accept=".xlsx,.xls"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => document.getElementById('import-file')?.click()}
+          >
             <Upload className="h-4 w-4 mr-2" />
             Importar
           </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Cliente
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToExcel} className="cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                Exportar a Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF} className="cursor-pointer">
+                <FileText className="h-4 w-4 mr-2 text-red-600" />
+                Exportar a PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            className="cursor-pointer">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Usuario
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-lg border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Total Clientes
-              </p>
-              <p className="text-3xl font-bold mt-2">{clientes.length}</p>
-            </div>
-            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-          </div>
-        </div>
+      <UserFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-        <div className="bg-white p-6 rounded-lg border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Clientes Activos
-              </p>
-              <p className="text-3xl font-bold mt-2">
-                {clientes.filter(c => c.activo).length}
-              </p>
-            </div>
-            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Clientes Inactivos
-              </p>
-              <p className="text-3xl font-bold mt-2">
-                {clientes.filter(c => !c.activo).length}
-              </p>
-            </div>
-            <div className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center">
-              <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filtros */}
-      <ClienteFilters filters={filters} onFiltersChange={setFilters} />
-
-      {/* Tabla */}
-      <ClientesTable
-        clientes={clientesFiltrados}
+      <UserTable
+        usuarios={usuarios}
+        loading={loading}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onToggleActivo={handleToggleActivo}
-        isLoading={isLoading}
+        pagination={pagination}
+        onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
       />
 
-      {/* Diálogos */}
-      <CreateClienteDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+      {/* Diálogo de creación */}
+      <CreateUsuarioDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
         onSubmit={handleCreate}
       />
 
-      <EditClienteDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        cliente={selectedCliente}
+      <EditUsuarioDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setUsuarioToEdit(null);
+        }}
+        usuario={usuarioToEdit}
         onSubmit={handleUpdate}
       />
 
-      <DeleteConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+      {/* Diálogo de eliminación */}
+      <DeleteUserDialog
+        user={userToDelete}
+        open={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
         onConfirm={confirmDelete}
-        title="¿Eliminar cliente?"
-        description={`¿Estás seguro de que deseas eliminar a "${selectedCliente?.razon_social || selectedCliente?.email}"? Esta acción no se puede deshacer.`}
       />
-      </div>
     </div>
   );
 }

@@ -1,245 +1,383 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Briefcase } from 'lucide-react';
-import { Button } from '@/components//ui/button';
-import { Input } from '@/components//ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components//ui/card';
+import UserTable from '@/components/usuarios/UsuarioTable';
+import UserFilters from '@/components/usuarios/UsuarioFilters';
+import DeleteUserDialog from '@/components/usuarios/DeleteUsuarioDialog';
+import CreateUsuarioDialog from '@/components/usuarios/CreateUsuarioDialog';
+import EditUsuarioDialog from '@/components/usuarios/EditUsuarioDialog';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { Button } from '@/components/ui/button';
+import { Plus, Download, Upload, FileSpreadsheet, FileText } from 'lucide-react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components///ui/select';
-import { getTalleresAction, getEstadisticasTalleresAction } from '@/lib/actions/talleres';
-import { TalleresTable } from '@/components/talleres/TalleresTable';
-import { CreateTallerDialog } from '@/components/talleres/CreateTallerDialog';
-import type { Taller, EstadoTaller, EspecialidadTaller } from '@/lib/api';
-
-const especialidadLabels: Record<EspecialidadTaller, string> = {
-  CORTE: 'Corte',
-  CONFECCION: 'Confección',
-  BORDADO: 'Bordado',
-  ESTAMPADO: 'Estampado',
-  COSTURA: 'Costura',
-  ACABADOS: 'Acabados',
-  OTRO: 'Otro',
-};
-
-export default function TalleresPage() {
-  const [talleres, setTalleres] = useState<Taller[]>([]);
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/app/hooks/use-toast';
+import { fetchUsuarios, deleteUsuario, createUsuario, updateUsuario, Usuario } from '@/lib/api';
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => void;
+  }
+}
+export default function UsuariosPage() {
+  const { toast } = useToast();
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    busqueda: '',
+    rol: '',
+    estado: '',
+  });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+  
+  // Estados de diálogos
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-
-  const [busqueda, setBusqueda] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState<string>('');
-  const [especialidadFilter, setEspecialidadFilter] = useState<string>('');
-
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const limit = 10;
-
-  const [estadisticas, setEstadisticas] = useState<any>(null);
+  const [usuarioToEdit, setUsuarioToEdit] = useState<Usuario | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<Usuario | null>(null);
 
   useEffect(() => {
-    loadTalleres();
-    loadEstadisticas();
-  }, [page, busqueda, estadoFilter, especialidadFilter]);
+    loadUsuarios();
+  }, [filters, pagination.page]);
 
-  const loadTalleres = async () => {
+  const loadUsuarios = async () => {
     setLoading(true);
     try {
-      const result = await getTalleresAction({
-        page,
-        limit,
-        busqueda: busqueda || undefined,
-        estado: estadoFilter as EstadoTaller || undefined,
-        especialidad: especialidadFilter as EspecialidadTaller || undefined,
+      const data = await fetchUsuarios({
+        page: pagination.page,
+        limit: pagination.limit,
+        busqueda: filters.busqueda || undefined,
+        rol: filters.rol || undefined,
+        estado: filters.estado || undefined,
       });
 
-      if (result.success && result.data) {
-        setTalleres(result.data.talleres);
-        setTotal(result.data.total);
-        setTotalPages(result.data.totalPages);
-      }
+      setUsuarios(data.usuarios);
+      setPagination((prev) => ({
+        ...prev,
+        total: data.total,
+        totalPages: data.totalPages,
+      }));
     } catch (error) {
-      console.error('Error cargando talleres:', error);
+      console.error('Error cargando usuarios:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudieron cargar los usuarios',
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const loadEstadisticas = async () => {
-    try {
-      const result = await getEstadisticasTalleresAction();
-      if (result.success) {
-        setEstadisticas(result.data);
-      }
-    } catch (error) {
-      console.error('Error cargando estadísticas:', error);
+  const handleEdit = (id: string) => {
+    const usuario = usuarios.find((u) => u.id.toString() === id);
+    if (usuario) {
+      setUsuarioToEdit(usuario);
+      setIsEditDialogOpen(true);
     }
   };
 
-  const handleSearch = (value: string) => {
-    setBusqueda(value);
-    setPage(1);
+  const handleCreate = async (data: any) => {
+    try {
+      await createUsuario(data);
+      toast({
+        title: 'Éxito',
+        description: 'Usuario creado correctamente',
+      });
+      setShowCreateDialog(false);
+      await loadUsuarios();
+    } catch (error: any) {
+      console.error('Error creando usuario:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo crear el usuario',
+      });
+      throw error;
+    }
   };
 
-  const handleEstadoFilter = (value: string) => {
-    setEstadoFilter(value === 'todos' ? '' : value);
-    setPage(1);
+  const handleUpdate = async (id: string, data: any) => {
+    try {
+      await updateUsuario(id, data);
+      toast({
+        title: 'Éxito',
+        description: 'Usuario actualizado correctamente',
+      });
+      setUsuarioToEdit(null);
+      setIsEditDialogOpen(false);
+      await loadUsuarios();
+    } catch (error: any) {
+      console.error('Error actualizando usuario:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo actualizar el usuario',
+      });
+      throw error;
+    }
   };
 
-  const handleEspecialidadFilter = (value: string) => {
-    setEspecialidadFilter(value === 'todas' ? '' : value);
-    setPage(1);
+  const handleDelete = (usuario: Usuario) => {
+    setUserToDelete(usuario);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+
+    try {
+      await deleteUsuario(userToDelete.id);
+      toast({
+        title: 'Éxito',
+        description: 'Usuario eliminado correctamente',
+      });
+      await loadUsuarios();
+      setUserToDelete(null);
+    } catch (error: any) {
+      console.error('Error eliminando usuario:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo eliminar el usuario',
+      });
+    }
+  };
+
+  const handleFiltersChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  // Función para exportar a Excel
+  const exportToExcel = () => {
+    try {
+      // Crear datos para Excel
+      const data = usuarios.map(usuario => ({
+        'ID': usuario.id,
+        'Nombre Completo': usuario.nombre_completo,
+        'Email': usuario.email,
+        'Teléfono': usuario.telefono || 'N/A',
+        'Rol': usuario.rol,
+        'Estado': usuario.estado,
+        'Fecha de Creación': new Date(usuario.created_at).toLocaleDateString('es-PE'),
+      }));
+
+      // Crear hoja de cálculo
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+
+      // Ajustar ancho de columnas
+      const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre Completo'].length), 10);
+      worksheet['!cols'] = [
+        { wch: 10 }, // ID
+        { wch: maxWidth }, // Nombre
+        { wch: 30 }, // Email
+        { wch: 15 }, // Teléfono
+        { wch: 20 }, // Rol
+        { wch: 15 }, // Estado
+        { wch: 20 }, // Fecha
+      ];
+
+      // Descargar archivo
+      XLSX.writeFile(workbook, `usuarios_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      toast({
+        title: 'Éxito',
+        description: 'Usuarios exportados a Excel correctamente',
+      });
+    } catch (error) {
+      console.error('Error exportando a Excel:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo exportar a Excel',
+      });
+    }
+  };
+
+  // Función para exportar a PDF
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Título
+      doc.setFontSize(18);
+      doc.text('Lista de Usuarios', 14, 20);
+      
+      // Fecha de generación
+      doc.setFontSize(10);
+      doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
+
+      // Preparar datos para la tabla
+      const tableData = usuarios.map(usuario => [
+        usuario.nombre_completo,
+        usuario.email,
+        usuario.telefono || 'N/A',
+        usuario.rol,
+        usuario.estado,
+      ]);
+
+      // Crear tabla
+      (doc as any).autoTable({
+        head: [['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado']],
+        body: tableData,
+        startY: 35,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+
+      // Guardar PDF
+      doc.save(`usuarios_${new Date().toISOString().split('T')[0]}.pdf`);
+
+      toast({
+        title: 'Éxito',
+        description: 'Usuarios exportados a PDF correctamente',
+      });
+    } catch (error) {
+      console.error('Error exportando a PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo exportar a PDF',
+      });
+    }
+  };
+
+  // Función para importar desde Excel
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        console.log('Datos importados:', jsonData);
+        
+        toast({
+          title: 'Éxito',
+          description: `Se importaron ${jsonData.length} registros`,
+        });
+
+        // Aquí puedes procesar los datos importados
+        // Por ejemplo, crear usuarios en batch
+        
+      } catch (error) {
+        console.error('Error importando archivo:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'No se pudo importar el archivo',
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    
+    // Limpiar el input
+    event.target.value = '';
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Talleres</h1>
-          <p className="text-muted-foreground">
-            Gestiona los talleres de confección
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Taller
-        </Button>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            id="import-file"
+            accept=".xlsx,.xls"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => document.getElementById('import-file')?.click()}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
+          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToExcel} className="cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                Exportar a Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF} className="cursor-pointer">
+                <FileText className="h-4 w-4 mr-2 text-red-600" />
+                Exportar a PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            className="cursor-pointer">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Usuario
+          </Button>
+        </div>
       </div>
 
-      {estadisticas && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Talleres</CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{estadisticas.total}</div>
-            </CardContent>
-          </Card>
+      <UserFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Talleres Activos</CardTitle>
-              <div className="h-3 w-3 rounded-full bg-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {estadisticas.porEstado?.ACTIVO || 0}
-              </div>
-            </CardContent>
-          </Card>
+      <UserTable
+        usuarios={usuarios}
+        loading={loading}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        pagination={pagination}
+        onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
+      />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Suspendidos</CardTitle>
-              <div className="h-3 w-3 rounded-full bg-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {estadisticas.porEstado?.SUSPENDIDO || 0}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-          <CardDescription>Busca y filtra talleres</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, RUC o contacto..."
-                value={busqueda}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            <Select value={estadoFilter || 'todos'} onValueChange={handleEstadoFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los estados</SelectItem>
-                <SelectItem value="ACTIVO">Activo</SelectItem>
-                <SelectItem value="INACTIVO">Inactivo</SelectItem>
-                <SelectItem value="SUSPENDIDO">Suspendido</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={especialidadFilter || 'todas'}
-              onValueChange={handleEspecialidadFilter}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Especialidad" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas las especialidades</SelectItem>
-                {Object.entries(especialidadLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {loading ? (
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">Cargando talleres...</p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <TalleresTable talleres={talleres} onUpdate={loadTalleres} />
-      )}
-
-      {!loading && totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Mostrando {talleres.length} de {total} talleres
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              Siguiente
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <CreateTallerDialog
+      {/* Diálogo de creación */}
+      <CreateUsuarioDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onSuccess={loadTalleres}
+        onSubmit={handleCreate}
+      />
+
+      <EditUsuarioDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setUsuarioToEdit(null);
+        }}
+        usuario={usuarioToEdit}
+        onSubmit={handleUpdate}
+      />
+
+      {/* Diálogo de eliminación */}
+      <DeleteUserDialog
+        user={userToDelete}
+        open={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={confirmDelete}
       />
     </div>
   );

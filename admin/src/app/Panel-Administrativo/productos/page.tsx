@@ -1,433 +1,384 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ProductosTable from '@/components//productos/ProductosTable';
-import StockDialog from '@/components//productos/StockDialog';
-import CreateProductoDialog from '@/components//productos/CreateProductoDialog';
-import EditProductoDialog from '@/components//productos/EditProductoDialog';
-import { Button } from '@/components//ui/button';
-import { Input } from '@/components/ui/input';
+import UserTable from '@/components/usuarios/UsuarioTable';
+import UserFilters from '@/components/usuarios/UsuarioFilters';
+import DeleteUserDialog from '@/components/usuarios/DeleteUsuarioDialog';
+import CreateUsuarioDialog from '@/components/usuarios/CreateUsuarioDialog';
+import EditUsuarioDialog from '@/components/usuarios/EditUsuarioDialog';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { Button } from '@/components/ui/button';
+import { Plus, Download, Upload, FileSpreadsheet, FileText } from 'lucide-react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components//ui/select';
-import { Plus, Search, Filter, AlertTriangle } from 'lucide-react';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/app/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components//ui/alert-dialog';
-import {
-  fetchProductos,
-  fetchCategorias,
-  deleteProducto,
-  createProducto,
-  updateProducto,
-  Producto,
-  Categoria,
-} from '@/lib/api';
-
-type ProductoTransformado = {
-  id: string;
-  nombre: string;
-  descripcion?: string;
-  precio: number;
-  imagen?: string;
-  stock: number;
-  stock_minimo: number;
-  estado: string;
-  categoria?: {
-    id: string;
-    nombre: string;
-  };
-};
-
-export default function ProductosPage() {
+import { fetchUsuarios, deleteUsuario, createUsuario, updateUsuario, Usuario } from '@/lib/api';
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => void;
+  }
+}
+export default function UsuariosPage() {
   const { toast } = useToast();
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
-  const [productoToDelete, setProductoToDelete] = useState<Producto | null>(null);
-  const [productoToStock, setProductoToStock] = useState<Producto | null>(null);
-
+  const [filters, setFilters] = useState({
+    busqueda: '',
+    rol: '',
+    estado: '',
+  });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+  
   // Estados de diálogos
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [productoToEdit, setProductoToEdit] = useState<Producto | null>(null);
-
-  // Filtros
-  const [busqueda, setBusqueda] = useState('');
-  const [estadoFiltro, setEstadoFiltro] = useState<string>('');
-  const [categoriaFiltro, setCategoriaFiltro] = useState<string>('');
-  const [showStockBajo, setShowStockBajo] = useState(false);
-
-  // Paginación
-  const [page, setPage] = useState(1);
-  const limit = 10;
+  const [usuarioToEdit, setUsuarioToEdit] = useState<Usuario | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<Usuario | null>(null);
 
   useEffect(() => {
-    loadCategorias();
-    loadProductos();
-  }, []);
+    loadUsuarios();
+  }, [filters, pagination.page]);
 
-  const loadCategorias = async () => {
-    try {
-      const data = await fetchCategorias();
-      setCategorias(data);
-    } catch (error: any) {
-      console.error('Error cargando categorías:', error);
-    }
-  };
-
-  const loadProductos = async () => {
+  const loadUsuarios = async () => {
     setLoading(true);
     try {
-      const data = await fetchProductos();
-      setProductos(data);
-    } catch (error: any) {
-      console.error('Error cargando productos:', error);
+      const data = await fetchUsuarios({
+        page: pagination.page,
+        limit: pagination.limit,
+        busqueda: filters.busqueda || undefined,
+        rol: filters.rol || undefined,
+        estado: filters.estado || undefined,
+      });
+
+      setUsuarios(data.usuarios);
+      setPagination((prev) => ({
+        ...prev,
+        total: data.total,
+        totalPages: data.totalPages,
+      }));
+    } catch (error) {
+      console.error('Error cargando usuarios:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudieron cargar los productos',
+        description: 'No se pudieron cargar los usuarios',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreate = async (data: any) => {
-    try {
-      await createProducto(data);
-      toast({
-        title: 'Éxito',
-        description: 'Producto creado correctamente',
-      });
-      setShowCreateDialog(false);
-      await loadProductos();
-    } catch (error: any) {
-      console.error('Error creando producto:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo crear el producto',
-      });
-      throw error;
+  const handleEdit = (id: string) => {
+    const usuario = usuarios.find((u) => u.id.toString() === id);
+    if (usuario) {
+      setUsuarioToEdit(usuario);
+      setIsEditDialogOpen(true);
     }
   };
 
-  const handleEdit = (id: string) => {
-    const producto = productos.find((p) => p.id.toString() === id);
-    if (producto) {
-      setProductoToEdit(producto);
+  const handleCreate = async (data: any) => {
+    try {
+      await createUsuario(data);
+      toast({
+        title: 'Éxito',
+        description: 'Usuario creado correctamente',
+      });
+      setShowCreateDialog(false);
+      await loadUsuarios();
+    } catch (error: any) {
+      console.error('Error creando usuario:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo crear el usuario',
+      });
+      throw error;
     }
   };
 
   const handleUpdate = async (id: string, data: any) => {
     try {
-      await updateProducto(Number(id), data);
+      await updateUsuario(id, data);
       toast({
         title: 'Éxito',
-        description: 'Producto actualizado correctamente',
+        description: 'Usuario actualizado correctamente',
       });
-      setProductoToEdit(null);
-      await loadProductos();
+      setUsuarioToEdit(null);
+      setIsEditDialogOpen(false);
+      await loadUsuarios();
     } catch (error: any) {
-      console.error('Error actualizando producto:', error);
+      console.error('Error actualizando usuario:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo actualizar el producto',
+        description: error.message || 'No se pudo actualizar el usuario',
       });
       throw error;
     }
   };
 
-  const handleDelete = (producto: ProductoTransformado) => {
-    const productoOriginal = productos.find((p) => p.id.toString() === producto.id);
-    if (productoOriginal) {
-      setProductoToDelete(productoOriginal);
-    }
+  const handleDelete = (usuario: Usuario) => {
+    setUserToDelete(usuario);
   };
 
   const confirmDelete = async () => {
-    if (!productoToDelete) return;
+    if (!userToDelete) return;
 
     try {
-      await deleteProducto(productoToDelete.id);
+      await deleteUsuario(userToDelete.id);
       toast({
         title: 'Éxito',
-        description: 'Producto eliminado correctamente',
+        description: 'Usuario eliminado correctamente',
       });
-      await loadProductos();
-      setProductoToDelete(null);
+      await loadUsuarios();
+      setUserToDelete(null);
     } catch (error: any) {
-      console.error('Error eliminando producto:', error);
+      console.error('Error eliminando usuario:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo eliminar el producto',
+        description: 'No se pudo eliminar el usuario',
       });
     }
   };
 
-  const handleManageStock = (producto: ProductoTransformado) => {
-    const productoOriginal = productos.find((p) => p.id.toString() === producto.id);
-    if (productoOriginal) {
-      setProductoToStock(productoOriginal);
+  const handleFiltersChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  // Función para exportar a Excel
+  const exportToExcel = () => {
+    try {
+      // Crear datos para Excel
+      const data = usuarios.map(usuario => ({
+        'ID': usuario.id,
+        'Nombre Completo': usuario.nombre_completo,
+        'Email': usuario.email,
+        'Teléfono': usuario.telefono || 'N/A',
+        'Rol': usuario.rol,
+        'Estado': usuario.estado,
+        'Fecha de Creación': new Date(usuario.created_at).toLocaleDateString('es-PE'),
+      }));
+
+      // Crear hoja de cálculo
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+
+      // Ajustar ancho de columnas
+      const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre Completo'].length), 10);
+      worksheet['!cols'] = [
+        { wch: 10 }, // ID
+        { wch: maxWidth }, // Nombre
+        { wch: 30 }, // Email
+        { wch: 15 }, // Teléfono
+        { wch: 20 }, // Rol
+        { wch: 15 }, // Estado
+        { wch: 20 }, // Fecha
+      ];
+
+      // Descargar archivo
+      XLSX.writeFile(workbook, `usuarios_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      toast({
+        title: 'Éxito',
+        description: 'Usuarios exportados a Excel correctamente',
+      });
+    } catch (error) {
+      console.error('Error exportando a Excel:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo exportar a Excel',
+      });
     }
   };
 
-  const handleUpdateStock = async (
-    id: string,
-    cantidad: number,
-    operacion: 'agregar' | 'reducir' | 'establecer'
-  ) => {
+  // Función para exportar a PDF
+  const exportToPDF = () => {
     try {
-      const producto = productos.find((p) => p.id.toString() === id);
-      if (!producto) return;
+      const doc = new jsPDF();
+      
+      // Título
+      doc.setFontSize(18);
+      doc.text('Lista de Usuarios', 14, 20);
+      
+      // Fecha de generación
+      doc.setFontSize(10);
+      doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
 
-      let nuevoStock = producto.stock;
-      if (operacion === 'agregar') {
-        nuevoStock += cantidad;
-      } else if (operacion === 'reducir') {
-        nuevoStock = Math.max(0, nuevoStock - cantidad);
-      } else {
-        nuevoStock = cantidad;
+      // Preparar datos para la tabla
+      const tableData = usuarios.map(usuario => [
+        usuario.nombre_completo,
+        usuario.email,
+        usuario.telefono || 'N/A',
+        usuario.rol,
+        usuario.estado,
+      ]);
+
+      // Crear tabla
+      (doc as any).autoTable({
+        head: [['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado']],
+        body: tableData,
+        startY: 35,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+
+      // Guardar PDF
+      doc.save(`usuarios_${new Date().toISOString().split('T')[0]}.pdf`);
+
+      toast({
+        title: 'Éxito',
+        description: 'Usuarios exportados a PDF correctamente',
+      });
+    } catch (error) {
+      console.error('Error exportando a PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo exportar a PDF',
+      });
+    }
+  };
+
+  // Función para importar desde Excel
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        console.log('Datos importados:', jsonData);
+        
+        toast({
+          title: 'Éxito',
+          description: `Se importaron ${jsonData.length} registros`,
+        });
+
+        // Aquí puedes procesar los datos importados
+        // Por ejemplo, crear usuarios en batch
+        
+      } catch (error) {
+        console.error('Error importando archivo:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'No se pudo importar el archivo',
+        });
       }
-
-      const response = await fetch(`/api/productos/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stock: nuevoStock }),
-      });
-
-      if (!response.ok) throw new Error('Error al actualizar stock');
-
-      toast({
-        title: 'Éxito',
-        description: 'Stock actualizado correctamente',
-      });
-
-      await loadProductos();
-    } catch (error: any) {
-      console.error('Error actualizando stock:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el stock',
-      });
-      throw error;
-    }
+    };
+    reader.readAsArrayBuffer(file);
+    
+    // Limpiar el input
+    event.target.value = '';
   };
-
-  const limpiarFiltros = () => {
-    setBusqueda('');
-    setEstadoFiltro('all');
-    setCategoriaFiltro('all');
-    setShowStockBajo(false);
-    setPage(1);
-  };
-
-  let productosFiltrados = productos.filter((producto) => {
-    const matchBusqueda =
-      !busqueda ||
-      producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      producto.descripcion?.toLowerCase().includes(busqueda.toLowerCase());
-
-    const matchEstado = !estadoFiltro || estadoFiltro === 'all' || producto.estado === estadoFiltro;
-
-    const matchCategoria =
-      !categoriaFiltro || categoriaFiltro === 'all' || producto.categoria_id.toString() === categoriaFiltro;
-
-    const matchStockBajo = !showStockBajo || producto.stock <= producto.stock_minimo;
-
-    return matchBusqueda && matchEstado && matchCategoria && matchStockBajo;
-  });
-
-  const total = productosFiltrados.length;
-  const totalPages = Math.ceil(total / limit);
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const productosPaginados = productosFiltrados.slice(startIndex, endIndex);
-
-  const productosTransformados: ProductoTransformado[] = productosPaginados.map((p) => ({
-    id: p.id.toString(),
-    nombre: p.nombre,
-    descripcion: p.descripcion ?? undefined,
-    precio: p.precio,
-    imagen: p.imagen ?? undefined,
-    stock: p.stock,
-    stock_minimo: p.stock_minimo,
-    estado: p.estado,
-    categoria_id: p.categoria_id,
-    created_at: p.created_at,
-    updated_at: p.updated_at ?? undefined,
-    categoria: p.categoria
-      ? {
-          id: p.categoria_id.toString(),
-          nombre: p.categoria.nombre,
-        }
-      : undefined,
-  }));
 
   return (
     <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Productos</h1>
-          <p className="text-gray-600 mt-1">
-            Administra el catálogo de productos ({total} total)
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Producto
-        </Button>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Buscar productos..."
-            value={busqueda}
-            onChange={(e) => {
-              setBusqueda(e.target.value);
-              setPage(1);
-            }}
-            className="pl-10"
+        <div className="flex gap-2">
+          <input
+            type="file"
+            id="import-file"
+            accept=".xlsx,.xls"
+            onChange={handleImport}
+            className="hidden"
           />
-        </div>
-
-        <Select
-          value={estadoFiltro}
-          onValueChange={(value) => {
-            setEstadoFiltro(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="activo">Activo</SelectItem>
-            <SelectItem value="inactivo">Inactivo</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={categoriaFiltro}
-          onValueChange={(value) => {
-            setCategoriaFiltro(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="Categoría" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas las categorías</SelectItem>
-            {categorias.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id.toString()}>
-                {cat.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button
-          variant={showStockBajo ? 'default' : 'outline'}
-          onClick={() => {
-            setShowStockBajo(!showStockBajo);
-            setPage(1);
-          }}
-        >
-          <AlertTriangle className="mr-2 h-4 w-4" />
-          Stock Bajo
-        </Button>
-
-        {(busqueda || estadoFiltro || categoriaFiltro || showStockBajo) && (
-          <Button variant="ghost" onClick={limpiarFiltros}>
-            <Filter className="mr-2 h-4 w-4" />
-            Limpiar
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => document.getElementById('import-file')?.click()}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
           </Button>
-        )}
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToExcel} className="cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                Exportar a Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF} className="cursor-pointer">
+                <FileText className="h-4 w-4 mr-2 text-red-600" />
+                Exportar a PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            className="cursor-pointer">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Usuario
+          </Button>
+        </div>
       </div>
 
-      <ProductosTable
-        productos={productosTransformados}
+      <UserFilters filters={filters} onFiltersChange={handleFiltersChange} />
+
+      <UserTable
+        usuarios={usuarios}
         loading={loading}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onManageStock={handleManageStock}
-        pagination={{
-          page,
-          limit,
-          total,
-          totalPages,
-        }}
-        onPageChange={setPage}
+        pagination={pagination}
+        onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
       />
 
       {/* Diálogo de creación */}
-      <CreateProductoDialog
+      <CreateUsuarioDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreate}
       />
 
-      {/* Diálogo de edición */}
-      {productoToEdit && (
-        <EditProductoDialog
-          open={!!productoToEdit}
-          onOpenChange={(open) => !open && setProductoToEdit(null)}
-          producto={productoToEdit}
-          onSubmit={handleUpdate}
-        />
-      )}
-
-      {/* Diálogo de Stock */}
-      {productoToStock && (
-        <StockDialog
-          open={!!productoToStock}
-          onOpenChange={(open) => !open && setProductoToStock(null)}
-          producto={{
-            id: productoToStock.id.toString(),
-            nombre: productoToStock.nombre,
-            stock: productoToStock.stock,
-          }}
-          onSubmit={handleUpdateStock}
-        />
-      )}
+      <EditUsuarioDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setUsuarioToEdit(null);
+        }}
+        usuario={usuarioToEdit}
+        onSubmit={handleUpdate}
+      />
 
       {/* Diálogo de eliminación */}
-      <AlertDialog open={!!productoToDelete} onOpenChange={() => setProductoToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el producto{' '}
-              <strong>{productoToDelete?.nombre}</strong>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteUserDialog
+        user={userToDelete}
+        open={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
