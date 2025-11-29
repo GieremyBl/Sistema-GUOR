@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import UserTable from '@/components/usuarios/UsuarioTable';
-import UserFilters from '@/components/usuarios/UsuarioFilters';
-import DeleteUserDialog from '@/components/usuarios/DeleteUsuarioDialog';
-import CreateUsuarioDialog from '@/components/usuarios/CreateUsuarioDialog';
-import EditUsuarioDialog from '@/components/usuarios/EditUsuarioDialog';
+import ProductosTable from '@/components/productos/ProductosTable';
+import CreateProductoDialog from '@/components/productos/CreateProductoDialog';
+import DeleteProductoDialog from '@/components/productos/DeleteProductoDialog';
+import EditProductoDialog from '@/components/productos/EditProductoDialog';
+import StockDialog from '@/components/productos/StockDialog';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -18,20 +18,32 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/app/hooks/use-toast';
-import { fetchUsuarios, deleteUsuario, createUsuario, updateUsuario, Usuario } from '@/lib/api';
+import { 
+  getProductos, 
+  createProducto, 
+  updateProducto, 
+  deleteProducto,
+  updateStockProducto
+} from '@/lib/actions/productos.actions';
+import { getCategorias } from '@/lib/actions/categorias.actions';
+import { Categoria } from '@/lib/types/categoria.types';
+import type { ProductoConCategoria, FiltrosProductos } from '@/lib/types/producto.types';
+
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => void;
   }
 }
-export default function UsuariosPage() {
+
+export default function ProductosPage() {
   const { toast } = useToast();
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [productos, setProductos] = useState<ProductoConCategoria[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<FiltrosProductos>({
     busqueda: '',
-    rol: '',
     estado: '',
+    categoriaId: '',
+    stockBajo: false,
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -40,161 +52,221 @@ export default function UsuariosPage() {
     totalPages: 0,
   });
   
-  // Estados de diálogos
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [usuarioToEdit, setUsuarioToEdit] = useState<Usuario | null>(null);
+  const [productoToEdit, setProductoToEdit] = useState<ProductoConCategoria | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<Usuario | null>(null);
-
-  useEffect(() => {
-    loadUsuarios();
+  const [productoToDelete, setProductoToDelete] = useState<ProductoConCategoria | null>(null);
+  const [productoStock, setProductoStock] = useState<ProductoConCategoria | null>(null); 
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+ useEffect(() => {
+    loadProductos();
+    loadCategorias();
   }, [filters, pagination.page]);
 
-  const loadUsuarios = async () => {
+  const loadProductos = async () => {
     setLoading(true);
     try {
-      const data = await fetchUsuarios({
+      const result = await getProductos({
         page: pagination.page,
         limit: pagination.limit,
         busqueda: filters.busqueda || undefined,
-        rol: filters.rol || undefined,
         estado: filters.estado || undefined,
+        categoriaId: filters.categoriaId || undefined,
+        stockBajo: filters.stockBajo || undefined,
       });
 
-      setUsuarios(data.usuarios);
-      setPagination((prev) => ({
-        ...prev,
-        total: data.total,
-        totalPages: data.totalPages,
-      }));
-    } catch (error) {
-      console.error('Error cargando usuarios:', error);
+      if (result.success && result.data && result.pagination) {
+        setProductos(result.data);
+        setPagination({
+          page: result.pagination.page,
+          limit: result.pagination.limit,
+          total: result.pagination.total,
+          totalPages: result.pagination.pages,
+        });
+      } else {
+        throw new Error(result.error || 'Error al cargar productos');
+      }
+    } catch (error: any) {
+      console.error('Error cargando productos:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'No se pudieron cargar los usuarios',
+        description: 'No se pudieron cargar los productos',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = (id: string) => {
-    const usuario = usuarios.find((u) => u.id.toString() === id);
-    if (usuario) {
-      setUsuarioToEdit(usuario);
+  const loadCategorias = async () => {
+    try {
+      const result = await getCategorias(); 
+      if (result.success && result.data) {
+        setCategorias(result.data);
+      }
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    }
+  };
+
+  const handleEdit = (id: number) => {
+    const producto = productos.find((p) => p.id === id);
+    if (producto) {
+      setProductoToEdit(producto);
       setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleStock = (id: number) => {
+    const producto = productos.find((p) => p.id === id);
+    if (producto) {
+      setProductoStock(producto);
     }
   };
 
   const handleCreate = async (data: any) => {
     try {
-      await createUsuario(data);
-      toast({
-        title: 'Éxito',
-        description: 'Usuario creado correctamente',
-      });
-      setShowCreateDialog(false);
-      await loadUsuarios();
+      const result = await createProducto(data);
+      if (result.success) {
+        toast({
+          title: 'Éxito',
+          description: 'Producto creado correctamente',
+        });
+        setShowCreateDialog(false);
+        await loadProductos();
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error: any) {
-      console.error('Error creando usuario:', error);
+      console.error('Error creando producto:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo crear el usuario',
+        description: error.message || 'No se pudo crear el producto',
       });
       throw error;
     }
   };
 
-  const handleUpdate = async (id: string, data: any) => {
+  const handleUpdate = async (id: number, data: any) => {
     try {
-      await updateUsuario(id, data);
-      toast({
-        title: 'Éxito',
-        description: 'Usuario actualizado correctamente',
-      });
-      setUsuarioToEdit(null);
-      setIsEditDialogOpen(false);
-      await loadUsuarios();
+      const result = await updateProducto({ id, ...data });
+      if (result.success) {
+        toast({
+          title: 'Éxito',
+          description: 'Producto actualizado correctamente',
+        });
+        setProductoToEdit(null);
+        setIsEditDialogOpen(false);
+        await loadProductos();
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error: any) {
-      console.error('Error actualizando usuario:', error);
+      console.error('Error actualizando producto:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo actualizar el usuario',
+        description: error.message || 'No se pudo actualizar el producto',
       });
       throw error;
     }
   };
 
-  const handleDelete = (usuario: Usuario) => {
-    setUserToDelete(usuario);
+  const handleDelete = (producto: ProductoConCategoria) => {
+    setProductoToDelete(producto);
   };
 
   const confirmDelete = async () => {
-    if (!userToDelete) return;
+    if (!productoToDelete) return;
 
     try {
-      await deleteUsuario(userToDelete.id);
-      toast({
-        title: 'Éxito',
-        description: 'Usuario eliminado correctamente',
-      });
-      await loadUsuarios();
-      setUserToDelete(null);
+      const result = await deleteProducto(productoToDelete.id);
+      if (result.success) {
+        toast({
+          title: 'Éxito',
+          description: 'Producto eliminado correctamente',
+        });
+        await loadProductos();
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error: any) {
-      console.error('Error eliminando usuario:', error);
+      console.error('Error eliminando producto:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'No se pudo eliminar el usuario',
+        description: error.message || 'No se pudo eliminar el producto',
       });
+    } finally {
+      setProductoToDelete(null);
     }
   };
 
-  const handleFiltersChange = (newFilters: typeof filters) => {
-    setFilters(newFilters);
-    setPagination((prev) => ({ ...prev, page: 1 }));
+  const handleStockUpdate = async (
+    id: number, 
+    cantidad: number, 
+    operacion: 'agregar' | 'reducir' | 'establecer'
+  ) => {
+    try {
+      const result = await updateStockProducto(id, cantidad, operacion);
+      if (result.success) {
+        toast({
+          title: 'Éxito',
+          description: 'Stock actualizado correctamente',
+        });
+        setProductoStock(null);
+        await loadProductos();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      console.error('Error actualizando stock:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo actualizar el stock',
+      });
+      throw error;
+    }
   };
 
-  // Función para exportar a Excel
   const exportToExcel = () => {
     try {
-      // Crear datos para Excel
-      const data = usuarios.map(usuario => ({
-        'ID': usuario.id,
-        'Nombre Completo': usuario.nombre_completo,
-        'Email': usuario.email,
-        'Teléfono': usuario.telefono || 'N/A',
-        'Rol': usuario.rol,
-        'Estado': usuario.estado,
-        'Fecha de Creación': new Date(usuario.created_at).toLocaleDateString('es-PE'),
+      const data = productos.map(producto => ({
+        'ID': producto.id,
+        'Nombre': producto.nombre,
+        'Descripción': producto.descripcion || 'N/A',
+        'Categoría': Array.isArray(producto.categoria) ? producto.categoria[0]?.nombre : 'N/A',
+        'Precio': `S/ ${producto.precio.toFixed(2)}`,
+        'Stock': producto.stock,
+        'Stock Mínimo': producto.stock_minimo,
+        'Estado': producto.estado,
+        'Fecha de Creación': new Date(producto.created_at).toLocaleDateString('es-PE'),
       }));
 
-      // Crear hoja de cálculo
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
 
-      // Ajustar ancho de columnas
-      const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre Completo'].length), 10);
+      const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre'].length), 10);
       worksheet['!cols'] = [
-        { wch: 10 }, // ID
-        { wch: maxWidth }, // Nombre
-        { wch: 30 }, // Email
-        { wch: 15 }, // Teléfono
-        { wch: 20 }, // Rol
-        { wch: 15 }, // Estado
-        { wch: 20 }, // Fecha
+        { wch: 8 },
+        { wch: maxWidth },
+        { wch: 30 },
+        { wch: 20 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 20 },
       ];
 
-      // Descargar archivo
-      XLSX.writeFile(workbook, `usuarios_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(workbook, `productos_${new Date().toISOString().split('T')[0]}.xlsx`);
 
       toast({
         title: 'Éxito',
-        description: 'Usuarios exportados a Excel correctamente',
+        description: 'Productos exportados a Excel correctamente',
       });
     } catch (error) {
       console.error('Error exportando a Excel:', error);
@@ -206,43 +278,37 @@ export default function UsuariosPage() {
     }
   };
 
-  // Función para exportar a PDF
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
       
-      // Título
       doc.setFontSize(18);
-      doc.text('Lista de Usuarios', 14, 20);
+      doc.text('Lista de Productos', 14, 20);
       
-      // Fecha de generación
       doc.setFontSize(10);
       doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
 
-      // Preparar datos para la tabla
-      const tableData = usuarios.map(usuario => [
-        usuario.nombre_completo,
-        usuario.email,
-        usuario.telefono || 'N/A',
-        usuario.rol,
-        usuario.estado,
+      const tableData = productos.map(producto => [
+        producto.nombre,
+        Array.isArray(producto.categoria) ? producto.categoria[0]?.nombre : 'N/A',
+        `S/ ${producto.precio.toFixed(2)}`,
+        producto.stock.toString(),
+        producto.estado,
       ]);
 
-      // Crear tabla
       (doc as any).autoTable({
-        head: [['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado']],
+        head: [['Nombre', 'Categoría', 'Precio', 'Stock', 'Estado']],
         body: tableData,
         startY: 35,
         styles: { fontSize: 8 },
         headStyles: { fillColor: [59, 130, 246] },
       });
 
-      // Guardar PDF
-      doc.save(`usuarios_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`productos_${new Date().toISOString().split('T')[0]}.pdf`);
 
       toast({
         title: 'Éxito',
-        description: 'Usuarios exportados a PDF correctamente',
+        description: 'Productos exportados a PDF correctamente',
       });
     } catch (error) {
       console.error('Error exportando a PDF:', error);
@@ -254,7 +320,6 @@ export default function UsuariosPage() {
     }
   };
 
-  // Función para importar desde Excel
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -274,9 +339,6 @@ export default function UsuariosPage() {
           title: 'Éxito',
           description: `Se importaron ${jsonData.length} registros`,
         });
-
-        // Aquí puedes procesar los datos importados
-        // Por ejemplo, crear usuarios en batch
         
       } catch (error) {
         console.error('Error importando archivo:', error);
@@ -289,7 +351,6 @@ export default function UsuariosPage() {
     };
     reader.readAsArrayBuffer(file);
     
-    // Limpiar el input
     event.target.value = '';
   };
 
@@ -297,7 +358,8 @@ export default function UsuariosPage() {
     <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Productos</h1>
+          <p className="text-gray-500 mt-1">Administra el inventario de productos</p>
         </div>
         <div className="flex gap-2">
           <input
@@ -339,45 +401,54 @@ export default function UsuariosPage() {
             onClick={() => setShowCreateDialog(true)}
             className="cursor-pointer">
             <Plus className="mr-2 h-4 w-4" />
-            Nuevo Usuario
+            Nuevo Producto
           </Button>
         </div>
       </div>
 
-      <UserFilters filters={filters} onFiltersChange={handleFiltersChange} />
-
-      <UserTable
-        usuarios={usuarios}
+      <ProductosTable
+        productos={productos}
         loading={loading}
+        filters={filters}
+        onFiltersChange={setFilters}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onStock={handleStock}
         pagination={pagination}
         onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
       />
 
-      {/* Diálogo de creación */}
-      <CreateUsuarioDialog
+      <CreateProductoDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreate}
+        categorias={categorias}
       />
 
-      <EditUsuarioDialog
+      <EditProductoDialog
         open={isEditDialogOpen}
         onOpenChange={(open) => {
           setIsEditDialogOpen(open);
-          if (!open) setUsuarioToEdit(null);
+          if (!open) setProductoToEdit(null);
         }}
-        usuario={usuarioToEdit}
+        producto={productoToEdit}
         onSubmit={handleUpdate}
       />
 
-      {/* Diálogo de eliminación */}
-      <DeleteUserDialog
-        user={userToDelete}
-        open={!!userToDelete}
-        onClose={() => setUserToDelete(null)}
+      <DeleteProductoDialog
+        producto={productoToDelete}
+        open={!!productoToDelete}
+        onClose={() => setProductoToDelete(null)}
         onConfirm={confirmDelete}
+      />
+
+      <StockDialog
+        producto={productoStock}
+        open={!!productoStock}
+        onOpenChange={(open) => {
+            if (!open) setProductoStock(null);
+        }}
+        onSubmit={handleStockUpdate}
       />
     </div>
   );

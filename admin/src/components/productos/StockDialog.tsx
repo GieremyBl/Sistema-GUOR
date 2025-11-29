@@ -22,7 +22,7 @@ import {
 import { Plus, Minus, Package } from 'lucide-react';
 
 interface Producto {
-  id: string;
+  id: number;
   nombre: string;
   stock: number;
 }
@@ -32,7 +32,7 @@ interface StockDialogProps {
   onOpenChange: (open: boolean) => void;
   producto: Producto | null;
   onSubmit: (
-    id: string,
+    id: number,
     cantidad: number,
     operacion: 'agregar' | 'reducir' | 'establecer'
   ) => Promise<void>;

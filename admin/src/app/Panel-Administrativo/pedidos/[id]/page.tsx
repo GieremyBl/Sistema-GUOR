@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button } from '@/components//ui/button';
-import { Badge } from '@/components//ui/badge';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -11,18 +11,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components//ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components//ui/card';
+} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Package, User, Calendar, DollarSign } from 'lucide-react';
-import { useToast } from'@/app/hooks/use-toast';
-import { getPedido, Pedido, EstadoPedido, PrioridadPedido } from '@/lib/api';';
+import { useToast } from '@/app/hooks/use-toast';
+import { getPedidoById } from '@/lib/actions/pedidos.actions';
+import type { PedidoConRelaciones } from '@/lib/types/pedido.types';
 import { format } from 'date-fns';
+
+type EstadoPedido = 'PENDIENTE' | 'EN_PROCESO' | 'TERMINADO' | 'ENTREGADO' | 'CANCELADO';
+type PrioridadPedido = 'BAJA' | 'NORMAL' | 'ALTA' | 'URGENTE';
 
 export default function DetallePedidoPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const [pedido, setPedido] = useState<Pedido | null>(null);
+  const [pedido, setPedido] = useState<PedidoConRelaciones | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,8 +35,12 @@ export default function DetallePedidoPage() {
 
   const loadPedido = async () => {
     try {
-      const data = await getPedido(params.id as string);
-      setPedido(data.pedido);
+      const result = await getPedidoById(Number(params.id));
+      if (result.success && result.data) {
+        setPedido(result.data);
+      } else {
+        throw new Error(result.error || 'No se pudo cargar el pedido');
+      }
     } catch (error: any) {
       console.error('Error cargando pedido:', error);
       toast({
@@ -92,12 +100,15 @@ export default function DetallePedidoPage() {
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-gray-900">Pedido #{pedido.id}</h1>
           <p className="text-gray-600 mt-1">
-            Creado el {format(new Date(pedido.created_at), 'dd/MM/yyyy HH:mm')}
+            Creado el {pedido.created_at 
+              ? format(new Date(pedido.created_at), 'dd/MM/yyyy HH:mm')
+              : 'Fecha no disponible'
+            }
           </p>
         </div>
         <div className="flex gap-2">
-          {getEstadoBadge(pedido.estado)}
-          {getPrioridadBadge(pedido.prioridad)}
+          {getEstadoBadge(pedido.estado as EstadoPedido)}
+          {getPrioridadBadge(pedido.prioridad as PrioridadPedido)}
         </div>
       </div>
 
@@ -114,22 +125,26 @@ export default function DetallePedidoPage() {
             <div className="space-y-2">
               <div>
                 <p className="text-sm text-gray-500">Razón Social</p>
-                <p className="font-medium">{pedido.cliente?.razon_social || 'N/A'}</p>
+                <p className="font-medium">
+                  {Array.isArray(pedido.cliente) && pedido.cliente[0]?.razon_social || 'N/A'}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">RUC</p>
-                <p className="font-medium">{pedido.cliente?.ruc || 'N/A'}</p>
+                <p className="font-medium">
+                  {Array.isArray(pedido.cliente) && pedido.cliente[0]?.ruc || 'N/A'}
+                </p>
               </div>
-              {pedido.cliente?.email && (
+              {Array.isArray(pedido.cliente) && pedido.cliente[0]?.email && (
                 <div>
                   <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium">{pedido.cliente.email}</p>
+                  <p className="font-medium">{pedido.cliente[0].email}</p>
                 </div>
               )}
-              {pedido.cliente?.telefono && (
+              {Array.isArray(pedido.cliente) && pedido.cliente[0]?.telefono && (
                 <div>
                   <p className="text-sm text-gray-500">Teléfono</p>
-                  <p className="font-medium">{pedido.cliente.telefono}</p>
+                  <p className="font-medium">{pedido.cliente[0].telefono}</p>
                 </div>
               )}
             </div>
@@ -160,12 +175,14 @@ export default function DetallePedidoPage() {
                   </p>
                 </div>
               )}
-              <div>
-                <p className="text-sm text-gray-500">Última Actualización</p>
-                <p className="font-medium">
-                  {format(new Date(pedido.updated_at), 'dd/MM/yyyy HH:mm')}
-                </p>
-              </div>
+              {pedido.updated_at && (
+                <div>
+                  <p className="text-sm text-gray-500">Última Actualización</p>
+                  <p className="font-medium">
+                    {format(new Date(pedido.updated_at), 'dd/MM/yyyy HH:mm')}
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -186,10 +203,10 @@ export default function DetallePedidoPage() {
                   S/ {pedido.total.toFixed(2)}
                 </p>
               </div>
-              {pedido.creador && (
+              {Array.isArray(pedido.creador) && pedido.creador[0] && (
                 <div>
                   <p className="text-sm text-gray-500">Creado por</p>
-                  <p className="font-medium">{pedido.creador.nombre_completo}</p>
+                  <p className="font-medium">{pedido.creador[0].nombre_completo}</p>
                 </div>
               )}
             </div>
@@ -220,16 +237,16 @@ export default function DetallePedidoPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pedido.detalles?.map((detalle) => (
+                {pedido.detalles?.map((detalle: any) => (
                   <TableRow key={detalle.id}>
                     <TableCell>
                       <div>
                         <div className="font-medium">
-                          {detalle.producto?.nombre || 'N/A'}
+                          {Array.isArray(detalle.producto) && detalle.producto[0]?.nombre || 'N/A'}
                         </div>
-                        {detalle.producto?.descripcion && (
+                        {Array.isArray(detalle.producto) && detalle.producto[0]?.descripcion && (
                           <div className="text-sm text-gray-500">
-                            {detalle.producto.descripcion}
+                            {detalle.producto[0].descripcion}
                           </div>
                         )}
                       </div>

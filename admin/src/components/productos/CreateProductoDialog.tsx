@@ -2,302 +2,281 @@
 
 import { useState, ChangeEvent, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components//ui/dialog';
 import { Button } from '@/components//ui/button';
 import { Input } from '@/components//ui/input';
 import { Label } from '@/components//ui/label';
 import { Textarea } from '@/components//ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components//ui/select';
 import { ImagePlus, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
 interface Categoria {
-  id: string | number;
-  nombre: string;
+  id: string | number;
+  nombre: string;
 }
 
 interface CreateProductoDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (data: any) => Promise<void>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: any) => Promise<void>;
+  categorias: Categoria[]; 
 }
 
 export default function CreateProductoDialog({
-  open,
-  onOpenChange,
-  onSubmit,
+  open,
+  onOpenChange,
+  onSubmit,
+  categorias: allCategorias,
 }: CreateProductoDialogProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [categoriasLoading, setCategoriasLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Estado para la imagen
-  const [imagenFile, setImagenFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Estado para la imagen
+  const [imagenFile, setImagenFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-    precio: '',
-    categoria_id: '',
-    stock: '0',
-    stock_minimo: '10',
-    estado: 'activo',
-  });
+  const [formData, setFormData] = useState({
+    nombre: '',
+    descripcion: '',
+    precio: '',
+    categoria_id: '',
+    stock: '0',
+    stock_minimo: '10',
+    estado: 'activo',
+  });
 
-  // Cargar categorías cuando se abre el diálogo
-  useEffect(() => {
-    if (open && categorias.length === 0) {
-      loadCategorias();
-    }
-  }, [open]);
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar tamaño (máx 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        setError('La imagen no debe superar los 2MB');
+        return;
+      }
 
-  const loadCategorias = async () => {
-    setCategoriasLoading(true);
-    try {
-      const response = await fetch('/api/categorias');
-      const data = await response.json();
-      setCategorias(data);
-    } catch (error) {
-      console.error('Error cargando categorías:', error);
-      setError('Error al cargar las categorías');
-    } finally {
-      setCategoriasLoading(false);
-    }
-  };
+      // Validar tipo
+      if (!file.type.startsWith('image/')) {
+        setError('El archivo debe ser una imagen');
+        return;
+      }
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validar tamaño (máx 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        setError('La imagen no debe superar los 2MB');
-        return;
-      }
+      setError(null);
+      setImagenFile(file);
+      // Crear URL temporal para previsualizar
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
 
-      // Validar tipo
-      if (!file.type.startsWith('image/')) {
-        setError('El archivo debe ser una imagen');
-        return;
-      }
+  const removeImage = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setImagenFile(null);
+    setPreviewUrl(null);
+  };
 
-      setError(null);
-      setImagenFile(file);
-      // Crear URL temporal para previsualizar
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
-  };
+  const resetForm = () => {
+    setFormData({
+      nombre: '',
+      descripcion: '',
+      precio: '',
+      categoria_id: '',
+      stock: '0',
+      stock_minimo: '10',
+      estado: 'activo',
+    });
+    removeImage();
+    setError(null);
+  };
 
-  const removeImage = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setImagenFile(null);
-    setPreviewUrl(null);
-  };
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      resetForm();
+    }
+    onOpenChange(newOpen);
+  };
 
-  const resetForm = () => {
-    setFormData({
-      nombre: '',
-      descripcion: '',
-      precio: '',
-      categoria_id: '',
-      stock: '0',
-      stock_minimo: '10',
-      estado: 'activo',
-    });
-    removeImage();
-    setError(null);
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      resetForm();
-    }
-    onOpenChange(newOpen);
-  };
+    try {
+      // Validaciones
+      if (!formData.nombre.trim()) {
+        setError('El nombre del producto es obligatorio');
+        setLoading(false);
+        return;
+      }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+      if (!formData.categoria_id) {
+        setError('La categoría es obligatoria');
+        setLoading(false);
+        return;
+      }
 
-    try {
-      // Validaciones
-      if (!formData.nombre.trim()) {
-        setError('El nombre del producto es obligatorio');
-        setLoading(false);
-        return;
-      }
+      if (!formData.precio || parseFloat(formData.precio) <= 0) {
+        setError('El precio debe ser mayor a 0');
+        setLoading(false);
+        return;
+      }
 
-      if (!formData.categoria_id) {
-        setError('La categoría es obligatoria');
-        setLoading(false);
-        return;
-      }
+      let imagenUrl = '';
 
-      if (!formData.precio || parseFloat(formData.precio) <= 0) {
-        setError('El precio debe ser mayor a 0');
-        setLoading(false);
-        return;
-      }
+      // Lógica de Subida de Imagen a Supabase
+      if (imagenFile) {
+        console.log('Subiendo imagen...', imagenFile.name);
 
-      let imagenUrl = '';
+        const fileExt = imagenFile.name.split('.').pop()?.toLowerCase();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = fileName;
 
-      // Lógica de Subida de Imagen a Supabase
-      if (imagenFile) {
-        console.log('Subiendo imagen...', imagenFile.name);
+        // Subir al bucket 'productos'
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('productos')
+          .upload(filePath, imagenFile, {
+            cacheControl: '3600',
+            upsert: false,
+          });
 
-        const fileExt = imagenFile.name.split('.').pop()?.toLowerCase();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = fileName;
+        if (uploadError) {
+          console.error('Error de Supabase:', uploadError);
+          throw new Error(`Error subiendo la imagen: ${uploadError.message}`);
+        }
 
-        // Subir al bucket 'productos'
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('productos')
-          .upload(filePath, imagenFile, {
-            cacheControl: '3600',
-            upsert: false,
-          });
+        console.log('Imagen subida exitosamente:', uploadData);
 
-        if (uploadError) {
-          console.error('Error de Supabase:', uploadError);
-          throw new Error(`Error subiendo la imagen: ${uploadError.message}`);
-        }
+        // Obtener la URL pública
+        const { data: { publicUrl } } = supabase.storage
+          .from('productos')
+          .getPublicUrl(filePath);
 
-        console.log('Imagen subida exitosamente:', uploadData);
+        imagenUrl = publicUrl;
+        console.log('URL pública generada:', imagenUrl);
+      }
 
-        // Obtener la URL pública
-        const { data: { publicUrl } } = supabase.storage
-          .from('productos')
-          .getPublicUrl(filePath);
+      // Enviar datos
+      await onSubmit({
+        nombre: formData.nombre.trim(),
+        descripcion: formData.descripcion.trim() || undefined,
+        precio: parseFloat(formData.precio),
+        categoria_id: Number(formData.categoria_id),
+        stock: Math.max(0, parseInt(formData.stock) || 0),
+        stock_minimo: Math.max(0, parseInt(formData.stock_minimo) || 10),
+        imagen: imagenUrl || undefined,
+        estado: formData.estado,
+      });
 
-        imagenUrl = publicUrl;
-        console.log('URL pública generada:', imagenUrl);
-      }
+      handleOpenChange(false);
+    } catch (error: any) {
+      console.error('Error en el formulario:', error);
+      setError(error.message || 'Error al crear el producto');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Enviar datos
-      await onSubmit({
-        nombre: formData.nombre.trim(),
-        descripcion: formData.descripcion.trim() || undefined,
-        precio: parseFloat(formData.precio),
-        categoria_id: Number(formData.categoria_id),
-        stock: Math.max(0, parseInt(formData.stock) || 0),
-        stock_minimo: Math.max(0, parseInt(formData.stock_minimo) || 10),
-        imagen: imagenUrl || undefined,
-        estado: formData.estado,
-      });
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Crear Nuevo Producto</DialogTitle>
+          <DialogDescription>
+            Completa el formulario para agregar un nuevo producto al catálogo
+          </DialogDescription>
+        </DialogHeader>
 
-      handleOpenChange(false);
-    } catch (error: any) {
-      console.error('Error en el formulario:', error);
-      setError(error.message || 'Error al crear el producto');
-    } finally {
-      setLoading(false);
-    }
-  };
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+            {error}
+          </div>
+        )}
 
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Crear Nuevo Producto</DialogTitle>
-          <DialogDescription>
-            Completa el formulario para agregar un nuevo producto al catálogo
-          </DialogDescription>
-        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Nombre */}
+          <div className="space-y-2">
+            <Label htmlFor="nombre">Nombre del Producto *</Label>
+            <Input
+              id="nombre"
+              placeholder="Ej: Polo Clásico Algodón"
+              value={formData.nombre}
+              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              required
+              disabled={loading}
+            />
+          </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
-            {error}
-          </div>
-        )}
+          {/* Descripción */}
+          <div className="space-y-2">
+            <Label htmlFor="descripcion">Descripción</Label>
+            <Textarea
+              id="descripcion"
+              placeholder="Detalles del producto..."
+              value={formData.descripcion}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              rows={3}
+              disabled={loading}
+              className="resize-none"
+            />
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nombre */}
-          <div className="space-y-2">
-            <Label htmlFor="nombre">Nombre del Producto *</Label>
-            <Input
-              id="nombre"
-              placeholder="Ej: Polo Clásico Algodón"
-              value={formData.nombre}
-              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-              required
-              disabled={loading}
-            />
-          </div>
+          {/* Precio y Categoría */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="precio">Precio (S/) *</Label>
+              <Input
+                id="precio"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={formData.precio}
+                onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+                required
+                disabled={loading}
+              />
+            </div>
 
-          {/* Descripción */}
-          <div className="space-y-2">
-            <Label htmlFor="descripcion">Descripción</Label>
-            <Textarea
-              id="descripcion"
-              placeholder="Detalles del producto..."
-              value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-              rows={3}
-              disabled={loading}
-              className="resize-none"
-            />
-          </div>
-
-          {/* Precio y Categoría */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="precio">Precio (S/) *</Label>
-              <Input
-                id="precio"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={formData.precio}
-                onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="categoria_id">Categoría *</Label>
-              <Select
-                value={formData.categoria_id}
-                onValueChange={(value) => setFormData({ ...formData, categoria_id: value })}
-                disabled={loading || categoriasLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categorias.length > 0 ? (
-                    categorias.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id.toString()}>
-                        {cat.nombre}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="" disabled>
-                      No hay categorías disponibles
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="categoria_id">Categoría *</Label>
+              <Select
+                value={formData.categoria_id}
+                onValueChange={(value) => setFormData({ ...formData, categoria_id: value })}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allCategorias.length > 0 ? (
+                    allCategorias.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {cat.nombre}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      No hay categorías disponibles
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {/* Stock */}
           <div className="grid grid-cols-2 gap-4">

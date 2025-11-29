@@ -19,13 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components//ui/select';
-import type { Usuario } from '@/lib/api';
+import type { Usuario } from '@/lib/types/usuario.types';
 
 interface EditUsuarioDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   usuario: Usuario | null;
-  onSubmit: (id: string, data: any) => Promise<void>;
+  onSubmit: (id: number, data: any) => Promise<void>;
 }
 
 const ROLES = ['admin', 'supervisor', 'operario', 'usuario'];
@@ -83,7 +83,7 @@ export default function EditUsuarioDialog({
 
     setLoading(true);
     try {
-      await onSubmit(usuario.id.toString(), {
+      await onSubmit(usuario.id, {
         nombre_completo: formData.nombre_completo.trim(),
         email: formData.email.trim(),
         telefono: formData.telefono.trim() || null,

@@ -11,12 +11,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
-
-interface Usuario {
-  id: string;
-  nombre_completo: string;
-  email: string;
-}
+import { Usuario } from '@/lib/types';
 
 interface DeleteUserDialogProps {
   user: Usuario | null;

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import UserTable from '@/components/usuarios/UsuarioTable';
-import UserFilters from '@/components/usuarios/UsuarioFilters';
-import DeleteUserDialog from '@/components/usuarios/DeleteUsuarioDialog';
-import CreateUsuarioDialog from '@/components/usuarios/CreateUsuarioDialog';
-import EditUsuarioDialog from '@/components/usuarios/EditUsuarioDialog';
+import TallerTable from '@/components/talleres/TallerTable';
+import TallerFilters from '@/components/talleres/TallerFilters';
+import DeleteTallerDialog from '@/components/talleres/DeleteTallerDialog';
+import CreateTallerDialog from '@/components/talleres/CreateTallerDialog';
+import EditTallerDialog from '@/components/talleres/EditTallerDialog';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -18,20 +18,30 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/app/hooks/use-toast';
-import { fetchUsuarios, deleteUsuario, createUsuario, updateUsuario, Usuario } from '@/lib/api';
+
+// Importar tipos y acciones
+import { Taller } from '@/lib/types/taller.types';
+import { 
+  getTalleresAction, 
+  deleteTallerAction, 
+  createTallerAction, 
+  updateTallerAction 
+} from '@/lib/actions/talleres.actions';
+
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => void;
   }
 }
-export default function UsuariosPage() {
+
+export default function TalleresPage() {
   const { toast } = useToast();
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [talleres, setTalleres] = useState<Taller[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     busqueda: '',
-    rol: '',
     estado: '',
+    especialidad: '',
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -42,37 +52,41 @@ export default function UsuariosPage() {
   
   // Estados de diálogos
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [usuarioToEdit, setUsuarioToEdit] = useState<Usuario | null>(null);
+  const [tallerToEdit, setTallerToEdit] = useState<Taller | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<Usuario | null>(null);
+  const [tallerToDelete, setTallerToDelete] = useState<Taller | null>(null);
 
   useEffect(() => {
-    loadUsuarios();
+    loadTalleres();
   }, [filters, pagination.page]);
 
-  const loadUsuarios = async () => {
+  const loadTalleres = async () => {
     setLoading(true);
     try {
-      const data = await fetchUsuarios({
+      const result = await getTalleresAction({
         page: pagination.page,
         limit: pagination.limit,
         busqueda: filters.busqueda || undefined,
-        rol: filters.rol || undefined,
-        estado: filters.estado || undefined,
+        estado: filters.estado as any || undefined,
+        especialidad: filters.especialidad as any || undefined,
       });
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
-      setUsuarios(data.usuarios);
+      setTalleres(result.data.talleres);
       setPagination((prev) => ({
         ...prev,
-        total: data.total,
-        totalPages: data.totalPages,
+        total: result.data.total,
+        totalPages: result.data.totalPages,
       }));
     } catch (error) {
-      console.error('Error cargando usuarios:', error);
+      console.error('Error cargando talleres:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'No se pudieron cargar los usuarios',
+        description: 'No se pudieron cargar los talleres',
       });
     } finally {
       setLoading(false);
@@ -80,28 +94,33 @@ export default function UsuariosPage() {
   };
 
   const handleEdit = (id: string) => {
-    const usuario = usuarios.find((u) => u.id.toString() === id);
-    if (usuario) {
-      setUsuarioToEdit(usuario);
+    const taller = talleres.find((t: Taller) => t.id.toString() === id);
+    if (taller) {
+      setTallerToEdit(taller);
       setIsEditDialogOpen(true);
     }
   };
 
   const handleCreate = async (data: any) => {
     try {
-      await createUsuario(data);
+      const result = await createTallerAction(data);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
       toast({
         title: 'Éxito',
-        description: 'Usuario creado correctamente',
+        description: 'Taller creado correctamente',
       });
       setShowCreateDialog(false);
-      await loadUsuarios();
+      await loadTalleres();
     } catch (error: any) {
-      console.error('Error creando usuario:', error);
+      console.error('Error creando taller:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo crear el usuario',
+        description: error.message || 'No se pudo crear el taller',
       });
       throw error;
     }
@@ -109,46 +128,56 @@ export default function UsuariosPage() {
 
   const handleUpdate = async (id: string, data: any) => {
     try {
-      await updateUsuario(id, data);
+      const result = await updateTallerAction(parseInt(id), data);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
       toast({
         title: 'Éxito',
-        description: 'Usuario actualizado correctamente',
+        description: 'Taller actualizado correctamente',
       });
-      setUsuarioToEdit(null);
+      setTallerToEdit(null);
       setIsEditDialogOpen(false);
-      await loadUsuarios();
+      await loadTalleres();
     } catch (error: any) {
-      console.error('Error actualizando usuario:', error);
+      console.error('Error actualizando taller:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudo actualizar el usuario',
+        description: error.message || 'No se pudo actualizar el taller',
       });
       throw error;
     }
   };
 
-  const handleDelete = (usuario: Usuario) => {
-    setUserToDelete(usuario);
+  const handleDelete = (taller: Taller) => {
+    setTallerToDelete(taller);
   };
 
   const confirmDelete = async () => {
-    if (!userToDelete) return;
+    if (!tallerToDelete) return;
 
     try {
-      await deleteUsuario(userToDelete.id);
+      const result = await deleteTallerAction(tallerToDelete.id);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
       toast({
         title: 'Éxito',
-        description: 'Usuario eliminado correctamente',
+        description: 'Taller eliminado correctamente',
       });
-      await loadUsuarios();
-      setUserToDelete(null);
+      await loadTalleres();
+      setTallerToDelete(null);
     } catch (error: any) {
-      console.error('Error eliminando usuario:', error);
+      console.error('Error eliminando taller:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'No se pudo eliminar el usuario',
+        description: 'No se pudo eliminar el taller',
       });
     }
   };
@@ -161,40 +190,40 @@ export default function UsuariosPage() {
   // Función para exportar a Excel
   const exportToExcel = () => {
     try {
-      // Crear datos para Excel
-      const data = usuarios.map(usuario => ({
-        'ID': usuario.id,
-        'Nombre Completo': usuario.nombre_completo,
-        'Email': usuario.email,
-        'Teléfono': usuario.telefono || 'N/A',
-        'Rol': usuario.rol,
-        'Estado': usuario.estado,
-        'Fecha de Creación': new Date(usuario.created_at).toLocaleDateString('es-PE'),
+      const data = talleres.map(taller => ({
+        'ID': taller.id,
+        'Nombre': taller.nombre,
+        'RUC': taller.ruc || 'N/A',
+        'Contacto': taller.contacto || 'N/A',
+        'Teléfono': taller.telefono || 'N/A',
+        'Email': taller.email || 'N/A',
+        'Especialidad': taller.especialidad || 'N/A',
+        'Estado': taller.estado,
+        'Fecha de Creación': new Date(taller.created_at).toLocaleDateString('es-PE'),
       }));
 
-      // Crear hoja de cálculo
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Talleres');
 
-      // Ajustar ancho de columnas
-      const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre Completo'].length), 10);
+      const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre'].length), 10);
       worksheet['!cols'] = [
         { wch: 10 }, // ID
         { wch: maxWidth }, // Nombre
-        { wch: 30 }, // Email
+        { wch: 15 }, // RUC
+        { wch: 20 }, // Contacto
         { wch: 15 }, // Teléfono
-        { wch: 20 }, // Rol
+        { wch: 25 }, // Email
+        { wch: 15 }, // Especialidad
         { wch: 15 }, // Estado
         { wch: 20 }, // Fecha
       ];
 
-      // Descargar archivo
-      XLSX.writeFile(workbook, `usuarios_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(workbook, `talleres_${new Date().toISOString().split('T')[0]}.xlsx`);
 
       toast({
         title: 'Éxito',
-        description: 'Usuarios exportados a Excel correctamente',
+        description: 'Talleres exportados a Excel correctamente',
       });
     } catch (error) {
       console.error('Error exportando a Excel:', error);
@@ -211,38 +240,33 @@ export default function UsuariosPage() {
     try {
       const doc = new jsPDF();
       
-      // Título
       doc.setFontSize(18);
-      doc.text('Lista de Usuarios', 14, 20);
+      doc.text('Lista de Talleres', 14, 20);
       
-      // Fecha de generación
       doc.setFontSize(10);
       doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
 
-      // Preparar datos para la tabla
-      const tableData = usuarios.map(usuario => [
-        usuario.nombre_completo,
-        usuario.email,
-        usuario.telefono || 'N/A',
-        usuario.rol,
-        usuario.estado,
+      const tableData = talleres.map(taller => [
+        taller.nombre,
+        taller.ruc || 'N/A',
+        taller.contacto || 'N/A',
+        taller.telefono || 'N/A',
+        taller.estado,
       ]);
 
-      // Crear tabla
       (doc as any).autoTable({
-        head: [['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado']],
+        head: [['Nombre', 'RUC', 'Contacto', 'Teléfono', 'Estado']],
         body: tableData,
         startY: 35,
         styles: { fontSize: 8 },
         headStyles: { fillColor: [59, 130, 246] },
       });
 
-      // Guardar PDF
-      doc.save(`usuarios_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`talleres_${new Date().toISOString().split('T')[0]}.pdf`);
 
       toast({
         title: 'Éxito',
-        description: 'Usuarios exportados a PDF correctamente',
+        description: 'Talleres exportados a PDF correctamente',
       });
     } catch (error) {
       console.error('Error exportando a PDF:', error);
@@ -274,9 +298,6 @@ export default function UsuariosPage() {
           title: 'Éxito',
           description: `Se importaron ${jsonData.length} registros`,
         });
-
-        // Aquí puedes procesar los datos importados
-        // Por ejemplo, crear usuarios en batch
         
       } catch (error) {
         console.error('Error importando archivo:', error);
@@ -289,7 +310,6 @@ export default function UsuariosPage() {
     };
     reader.readAsArrayBuffer(file);
     
-    // Limpiar el input
     event.target.value = '';
   };
 
@@ -297,7 +317,8 @@ export default function UsuariosPage() {
     <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Talleres</h1>
+          <p className="text-gray-600 mt-1">Administra los talleres de producción</p>
         </div>
         <div className="flex gap-2">
           <input
@@ -339,44 +360,42 @@ export default function UsuariosPage() {
             onClick={() => setShowCreateDialog(true)}
             className="cursor-pointer">
             <Plus className="mr-2 h-4 w-4" />
-            Nuevo Usuario
+            Nuevo Taller
           </Button>
         </div>
       </div>
 
-      <UserFilters filters={filters} onFiltersChange={handleFiltersChange} />
+      <TallerFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-      <UserTable
-        usuarios={usuarios}
+      <TallerTable
+        talleres={talleres}
         loading={loading}
         onEdit={handleEdit}
         onDelete={handleDelete}
         pagination={pagination}
-        onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
+        onPageChange={(page: number) => setPagination((prev) => ({ ...prev, page }))}
       />
 
-      {/* Diálogo de creación */}
-      <CreateUsuarioDialog
+      <CreateTallerDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSubmit={handleCreate}
       />
 
-      <EditUsuarioDialog
+      <EditTallerDialog
         open={isEditDialogOpen}
         onOpenChange={(open) => {
           setIsEditDialogOpen(open);
-          if (!open) setUsuarioToEdit(null);
+          if (!open) setTallerToEdit(null);
         }}
-        usuario={usuarioToEdit}
+        taller={tallerToEdit}
         onSubmit={handleUpdate}
       />
 
-      {/* Diálogo de eliminación */}
-      <DeleteUserDialog
-        user={userToDelete}
-        open={!!userToDelete}
-        onClose={() => setUserToDelete(null)}
+      <DeleteTallerDialog
+        taller={tallerToDelete}
+        open={!!tallerToDelete}
+        onOpenChange={(open) => !open && setTallerToDelete(null)}
         onConfirm={confirmDelete}
       />
     </div>

@@ -1,72 +1,56 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Trash2, Phone, Mail, Briefcase } from 'lucide-react';
-import { Button } from '@/components//ui/button';
-import { Badge } from '@/components//ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components//ui/card';
-import { useToast } from '@/app/hooks/use-toast';
-import { deleteTallerAction } from '@/lib/actions/talleres';
-import type { Taller, EstadoTaller, EspecialidadTaller } from '@/lib/api';
-import { EditTallerDialog } from './EditTallerDialog';
-import { DeleteTallerDialog } from './DeleteTallerDialog';
+import { Pencil, Trash2, Phone, Mail, Briefcase, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Taller, 
+  ESTADO_TALLER_COLORS, 
+  ESPECIALIDAD_TALLER_LABELS 
+} from '@/lib/types/taller.types';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
-interface TalleresTableProps {
+interface TallerTableProps {
   talleres: Taller[];
-  onUpdate: () => void;
+  loading: boolean;
+  onEdit: (id: string) => void;
+  onDelete: (taller: Taller) => void;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  onPageChange: (page: number) => void;
 }
 
-const estadoColors: Record<EstadoTaller, string> = {
-  ACTIVO: 'bg-green-500/10 text-green-600 border-green-500/20',
-  INACTIVO: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
-  SUSPENDIDO: 'bg-red-500/10 text-red-600 border-red-500/20',
-};
+export default function TallerTable({
+  talleres,
+  loading,
+  onEdit,
+  onDelete,
+  pagination,
+  onPageChange,
+}: TallerTableProps) {
 
-const especialidadLabels: Record<EspecialidadTaller, string> = {
-  CORTE: 'Corte',
-  CONFECCION: 'Confección',
-  BORDADO: 'Bordado',
-  ESTAMPADO: 'Estampado',
-  COSTURA: 'Costura',
-  ACABADOS: 'Acabados',
-  OTRO: 'Otro',
-};
-
-export function TalleresTable({ talleres, onUpdate }: TalleresTableProps) {
-  const { toast } = useToast();
-  const [editingTaller, setEditingTaller] = useState<Taller | null>(null);
-  const [deletingTaller, setDeletingTaller] = useState<Taller | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDelete = async (id: number) => {
-    setIsDeleting(true);
-    try {
-      const result = await deleteTallerAction(id);
-      
-      if (result.success) {
-        toast({
-          title: '✅ Taller eliminado',
-          description: 'El taller ha sido eliminado exitosamente',
-        });
-        setDeletingTaller(null);
-        onUpdate();
-      } else {
-        toast({
-          title: '❌ Error',
-          description: result.error,
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: '❌ Error',
-        description: 'Error al eliminar el taller',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (talleres.length === 0) {
     return (
@@ -85,12 +69,12 @@ export function TalleresTable({ talleres, onUpdate }: TalleresTableProps) {
   }
 
   return (
-    <>
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>Listado de Talleres</CardTitle>
           <CardDescription>
-            Gestiona los talleres de confección
+            Gestiona los talleres de confección ({pagination.total} talleres)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -118,6 +102,11 @@ export function TalleresTable({ talleres, onUpdate }: TalleresTableProps) {
                             {taller.email}
                           </p>
                         )}
+                        {taller.direccion && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {taller.direccion}
+                          </p>
+                        )}
                       </div>
                     </td>
                     <td className="p-4">
@@ -140,7 +129,7 @@ export function TalleresTable({ talleres, onUpdate }: TalleresTableProps) {
                     <td className="p-4">
                       {taller.especialidad ? (
                         <Badge variant="outline" className="font-normal">
-                          {especialidadLabels[taller.especialidad]}
+                          {ESPECIALIDAD_TALLER_LABELS[taller.especialidad]}
                         </Badge>
                       ) : (
                         <span className="text-sm text-muted-foreground">—</span>
@@ -149,7 +138,7 @@ export function TalleresTable({ talleres, onUpdate }: TalleresTableProps) {
                     <td className="p-4">
                       <Badge
                         variant="outline"
-                        className={estadoColors[taller.estado]}
+                        className={ESTADO_TALLER_COLORS[taller.estado]}
                       >
                         {taller.estado}
                       </Badge>
@@ -159,7 +148,7 @@ export function TalleresTable({ talleres, onUpdate }: TalleresTableProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setEditingTaller(taller)}
+                          onClick={() => onEdit(taller.id.toString())}
                           title="Editar taller"
                         >
                           <Pencil className="h-4 w-4" />
@@ -167,7 +156,7 @@ export function TalleresTable({ talleres, onUpdate }: TalleresTableProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setDeletingTaller(taller)}
+                          onClick={() => onDelete(taller)}
                           title="Eliminar taller"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -182,24 +171,54 @@ export function TalleresTable({ talleres, onUpdate }: TalleresTableProps) {
         </CardContent>
       </Card>
 
-      {editingTaller && (
-        <EditTallerDialog
-          taller={editingTaller}
-          open={!!editingTaller}
-          onOpenChange={(open) => !open && setEditingTaller(null)}
-          onSuccess={onUpdate}
-        />
-      )}
+      {/* Paginación */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => onPageChange(Math.max(1, pagination.page - 1))}
+                  className={
+                    pagination.page === 1
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
 
-      {deletingTaller && (
-        <DeleteTallerDialog
-          taller={deletingTaller}
-          open={!!deletingTaller}
-          onOpenChange={(open) => !open && setDeletingTaller(null)}
-          onConfirm={() => handleDelete(deletingTaller.id)}
-          isDeleting={isDeleting}
-        />
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => onPageChange(page)}
+                      isActive={page === pagination.page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              )}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    onPageChange(
+                      Math.min(pagination.totalPages, pagination.page + 1)
+                    )
+                  }
+                  className={
+                    pagination.page === pagination.totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       )}
-    </>
+    </div>
   );
 }

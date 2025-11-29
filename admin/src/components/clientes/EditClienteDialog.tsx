@@ -14,13 +14,13 @@ import { Input } from '@/components//ui/input';
 import { Label } from '@/components//ui/label';
 import { Textarea } from '@/components//ui/textarea';
 import { Switch } from '@/components//ui/switch';
-import type { Cliente, ClienteUpdateInput } from '@/lib/api';
+import type { Cliente, ClienteUpdateInput } from '@/lib/types/cliente.types';
 
 interface EditClienteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   cliente: Cliente | null;
-  onSubmit: (id: string, data: ClienteUpdateInput) => Promise<void>;
+  onSubmit: (id: number, data: ClienteUpdateInput) => Promise<void>;
 }
 
 export default function EditClienteDialog({
@@ -91,7 +91,7 @@ export default function EditClienteDialog({
         activo: formData.activo,
       };
 
-      await onSubmit(cliente.id.toString(), dataToSubmit);
+      await onSubmit(cliente.id, dataToSubmit);
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error al actualizar cliente:', error);

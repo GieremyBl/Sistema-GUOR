@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components//ui/button';
-import { Input } from '@/components//ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components//ui/select';
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -18,19 +18,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components//ui/table';
-import { Badge } from '@/components//ui/badge';
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Filter, Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/app/hooks/use-toast';
-import {
-  fetchPedidos,
-  Pedido,
-  EstadoPedido,
-  PrioridadPedido,
-  FetchPedidosParams,
-} from '@/lib/api';
+import { getPedidos } from '@/lib/actions/pedidos.actions';
+import { 
+  Pedido, 
+  EstadoPedido, 
+  PrioridadPedido, 
+  FetchPedidosParams 
+} from '@/lib/types/pedido.types'; 
 import { format } from 'date-fns';
-import { CreatePedidoDialog } from '@/components///pedidos/CreatePedidoDialog';
+import { CreatePedidoDialog } from '@/components/pedidos/CreatePedidoDialog';
 
 type FilterValue = EstadoPedido | PrioridadPedido | 'all' | '';
 
@@ -39,7 +39,7 @@ export default function PedidosPage() {
   const { toast } = useToast();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateDialog, setShowCreateDialog] = useState(false); // ✅ MOVIDO AQUÍ
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Filtros
   const [busqueda, setBusqueda] = useState('');
@@ -59,36 +59,40 @@ export default function PedidosPage() {
   }, [pagination.page, busqueda, estadoFiltro, prioridadFiltro]);
 
   const loadPedidos = async () => {
-    setLoading(true);
-    try {
-      const params: FetchPedidosParams = {
-        page: pagination.page,
-        limit: pagination.limit,
-      };
+  setLoading(true);
+  try {
+    const params: FetchPedidosParams = {
+      page: pagination.page,
+      limit: pagination.limit,
+    };
 
-      if (busqueda) params.busqueda = busqueda;
-      if (estadoFiltro) params.estado = estadoFiltro;
-      if (prioridadFiltro) params.prioridad = prioridadFiltro;
+    if (busqueda) params.busqueda = busqueda;
+    if (estadoFiltro) params.estado = estadoFiltro;
+    if (prioridadFiltro) params.prioridad = prioridadFiltro;
 
-      const data = await fetchPedidos(params);
+    const result = await getPedidos(params);
 
-      setPedidos(data.pedidos);
+    if (result.success && result.data) {
+      setPedidos(result.data.pedidos);
       setPagination((prev) => ({
         ...prev,
-        total: data.total,
-        totalPages: data.totalPages,
+        total: result.data.meta.total || 0,
+        totalPages: result.data.meta.totalPages,
       }));
-    } catch (error: any) {
-      console.error('Error cargando pedidos:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudieron cargar los pedidos',
-      });
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(result.error || 'Error al cargar pedidos');
     }
-  };
+  } catch (error: any) {
+    console.error('Error cargando pedidos:', error);
+    toast({
+      variant: 'destructive',
+      title: 'Error',
+      description: error.message || 'No se pudieron cargar los pedidos',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleFilterChange = (setter: React.Dispatch<React.SetStateAction<any>>, value: FilterValue) => {
     const filterValue = value === 'all' ? '' : value;

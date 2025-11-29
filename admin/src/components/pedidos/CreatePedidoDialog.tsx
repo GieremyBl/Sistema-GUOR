@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createPedido } from '@/components/actions/pedidos';
-import { fetchClientesActivos } from '@/components/actions/clientes';
-import { getProductosDisponibles } from '@/components/actions/productos';
+import { createPedido } from '@/lib/actions/pedidos.actions';
+import { fetchClientesActivos } from '@/lib/actions/clientes.actions';
+import { getProductosDisponibles } from '@/lib/actions/productos.actions';
+import { PrioridadPedido } from '@/lib/types/pedido.types';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components//ui/dialog';
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -22,23 +23,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components//ui/form';
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components//ui/select';
-import { Input } from '@/components//ui/input';
-import { Button } from '@/components//ui/button';
-import { Calendar } from '@/components//ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components//ui/popover';
-import { useToast } from'@/app/hooks/use-toast';
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useToast } from '@/app/hooks/use-toast';
 import { Loader2, CalendarIcon, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/components/utils';
+import { cn } from '@/lib/utils';
 
 const detalleSchema = z.object({
   producto_id: z.string().min(1, 'Selecciona un producto'),
@@ -46,10 +47,11 @@ const detalleSchema = z.object({
   precio_unitario: z.number().min(0, 'El precio debe ser positivo'),
 });
 
+// ✅ Usar z.nativeEnum() en lugar de z.enum()
 const formSchema = z.object({
   cliente_id: z.string().min(1, 'Selecciona un cliente'),
   fecha_entrega: z.string().optional(),
-  prioridad: z.enum(['BAJA', 'NORMAL', 'ALTA', 'URGENTE']),
+  prioridad: z.nativeEnum(PrioridadPedido), // ✅ Cambio aquí
   detalles: z.array(detalleSchema).min(1, 'Agrega al menos un producto'),
 });
 
@@ -72,7 +74,7 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
     resolver: zodResolver(formSchema),
     defaultValues: {
       cliente_id: '',
-      prioridad: 'NORMAL',
+      prioridad: PrioridadPedido.NORMAL, // ✅ Usar el enum
       fecha_entrega: undefined,
       detalles: [{ producto_id: '', cantidad: 1, precio_unitario: 0 }],
     },
@@ -84,7 +86,7 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
     }
   }, [open]);
 
-    const loadInitialData = async () => {
+  const loadInitialData = async () => {
     setLoadingData(true);
     try {
       const [clientesRes, productosRes] = await Promise.all([
@@ -93,7 +95,11 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
       ]);
 
       // fetchClientesActivos devuelve directamente Cliente[]
-      setClientes(clientesRes || []);
+      if (clientesRes.success) {
+        setClientes(clientesRes.data || []);
+      } else {
+        console.error('Error cargando clientes:', clientesRes.error);
+      }
 
       // getProductosDisponibles devuelve { success, data }
       if (productosRes.success) {
@@ -112,9 +118,9 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
   const handleProductoChange = (index: number, productoId: string) => {
     const producto = productos.find((p) => p.id === productoId);
     if (producto) {
-      form.setValue(`detalles.${index}.precio_unitario`, producto.precio, { 
-        shouldValidate: true, 
-        shouldDirty: true 
+      form.setValue(`detalles.${index}.precio_unitario`, producto.precio, {
+        shouldValidate: true,
+        shouldDirty: true,
       });
     }
   };
@@ -132,10 +138,14 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
   const removeDetalle = (index: number) => {
     const currentDetalles = form.getValues('detalles');
     if (currentDetalles.length > 1) {
-      form.setValue('detalles', currentDetalles.filter((_, i) => i !== index), { 
-        shouldValidate: true, 
-        shouldDirty: true 
-      });
+      form.setValue(
+        'detalles',
+        currentDetalles.filter((_, i) => i !== index),
+        {
+          shouldValidate: true,
+          shouldDirty: true,
+        }
+      );
     }
   };
 
@@ -152,7 +162,20 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
   const onSubmit = async (data: FormValues) => {
     try {
       setIsSubmitting(true);
-      const result = await createPedido(data);
+      
+      // ✅ Transformar los datos al formato correcto
+      const pedidoData = {
+        cliente_id: Number(data.cliente_id),
+        fecha_entrega: data.fecha_entrega,
+        prioridad: data.prioridad,
+        detalles: data.detalles.map(detalle => ({
+          producto_id: Number(detalle.producto_id),
+          cantidad: detalle.cantidad,
+          precio_unitario: detalle.precio_unitario,
+        })),
+      };
+
+      const result = await createPedido(pedidoData);
 
       if (result.success) {
         toast({
@@ -161,7 +184,7 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
         });
         form.reset({
           cliente_id: '',
-          prioridad: 'NORMAL',
+          prioridad: PrioridadPedido.NORMAL,
           fecha_entrega: undefined,
           detalles: [{ producto_id: '', cantidad: 1, precio_unitario: 0 }],
         });
@@ -214,7 +237,7 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
                       </FormControl>
                       <SelectContent>
                         {clientes.map((cliente) => (
-                          <SelectItem key={cliente.id} value={cliente.id}>
+                          <SelectItem key={cliente.id} value={String(cliente.id)}>
                             {cliente.razon_social} - RUC: {cliente.ruc}
                           </SelectItem>
                         ))}
@@ -281,10 +304,11 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="BAJA">Baja</SelectItem>
-                          <SelectItem value="NORMAL">Normal</SelectItem>
-                          <SelectItem value="ALTA">Alta</SelectItem>
-                          <SelectItem value="URGENTE">Urgente</SelectItem>
+                          {/* ✅ Usar los valores del enum */}
+                          <SelectItem value={PrioridadPedido.BAJA}>Baja</SelectItem>
+                          <SelectItem value={PrioridadPedido.NORMAL}>Normal</SelectItem>
+                          <SelectItem value={PrioridadPedido.ALTA}>Alta</SelectItem>
+                          <SelectItem value={PrioridadPedido.URGENTE}>Urgente</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -325,7 +349,7 @@ export function CreatePedidoDialog({ open, onOpenChange, onSuccess }: CreatePedi
                               </FormControl>
                               <SelectContent>
                                 {productos.map((producto) => (
-                                  <SelectItem key={producto.id} value={producto.id}>
+                                  <SelectItem key={producto.id} value={String(producto.id)}>
                                     {producto.nombre}
                                   </SelectItem>
                                 ))}

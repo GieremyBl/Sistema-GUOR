@@ -1,7 +1,7 @@
 'use client';
 
 import { Edit, Trash2, Package, PackageOpen } from 'lucide-react';
-import { Button } from '@/components//ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -9,37 +9,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components//ui/table';
-import { Badge } from '@/components//ui/badge';
-
-interface Producto {
-  id: string;
-  nombre: string;
-  descripcion?: string;
-  precio: number;
-  stock: number;
-  stock_minimo: number;
-  imagen?: string;
-  estado: string;
-  categoria?: {
-    id: string;
-    nombre: string;
-  };
-}
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import type { ProductoConCategoria, FiltrosProductos } from '@/lib/types/producto.types';
+import { Dispatch, SetStateAction } from 'react';
 
 interface ProductosTableProps {
-  productos: Producto[];
+  productos: ProductoConCategoria[];
   loading: boolean;
-  onEdit: (id: string) => void;
-  onDelete: (producto: Producto) => void;
-  onManageStock: (producto: Producto) => void;
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  filters: FiltrosProductos; 
+  onFiltersChange: Dispatch<SetStateAction<FiltrosProductos>>;
+  pagination: { page: number; limit: number; total: number; totalPages: number };
   onPageChange: (page: number) => void;
+  onEdit: (id: number) => void;
+  onDelete: (producto: ProductoConCategoria) => void;
+  onStock: (id: number) => void;
 }
 
 export default function ProductosTable({
@@ -47,7 +31,7 @@ export default function ProductosTable({
   loading,
   onEdit,
   onDelete,
-  onManageStock,
+  onStock,
   pagination,
   onPageChange,
 }: ProductosTableProps) {
@@ -73,6 +57,14 @@ export default function ProductosTable({
       );
     }
     return <Badge className="bg-gray-100 text-gray-800">{stock} unidades</Badge>;
+  };
+
+  // Función helper para obtener el nombre de la categoría
+  const getCategoriaNombre = (producto: ProductoConCategoria): string => {
+    if (Array.isArray(producto.categoria) && producto.categoria.length > 0) {
+      return producto.categoria[0].nombre;
+    }
+    return 'Sin categoría';
   };
 
   if (loading) {
@@ -137,7 +129,7 @@ export default function ProductosTable({
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">
-                    {producto.categoria?.nombre || 'Sin categoría'}
+                    {getCategoriaNombre(producto)}
                   </Badge>
                 </TableCell>
                 <TableCell className="font-medium">
@@ -157,14 +149,15 @@ export default function ProductosTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => onEdit(producto.id)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onManageStock(producto)}
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => onStock(producto.id)}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
                     >
                       <Package className="h-4 w-4" />
                     </Button>

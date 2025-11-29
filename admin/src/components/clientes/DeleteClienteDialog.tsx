@@ -10,24 +10,35 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import type { Cliente } from '@/lib/types/cliente.types';
 
-interface DeleteConfirmDialogProps {
+interface DeleteClienteDialogProps {
   open: boolean;
+  cliente: Cliente | null;
   onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   onConfirm: () => void;
   title?: string;
   description?: string;
   isLoading?: boolean;
 }
-
-export default function DeleteConfirmDialog({
+export default function DeleteClienteDialog({
   open,
+  cliente,
+  onClose,
   onOpenChange,
   onConfirm,
   title = '¿Estás seguro?',
-  description = 'Esta acción no se puede deshacer.',
+  description,
   isLoading = false,
-}: DeleteConfirmDialogProps) {
+}: DeleteClienteDialogProps) {
+
+  const defaultDescription = cliente
+        ? `Estás a punto de eliminar al cliente ${cliente.razon_social || cliente.email}. Esta acción es irreversible.`
+        : 'Esta acción no se puede deshacer.';
+
+    const finalDescription = description || defaultDescription;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -39,7 +50,7 @@ export default function DeleteConfirmDialog({
             <div className="flex-1">
               <DialogTitle>{title}</DialogTitle>
               <DialogDescription className="mt-1">
-                {description}
+                {finalDescription}
               </DialogDescription>
             </div>
           </div>
@@ -54,7 +65,7 @@ export default function DeleteConfirmDialog({
           </Button>
           <Button
             variant="destructive"
-            onClick={onConfirm}
+            onClick={onClose}
             disabled={isLoading}
           >
             {isLoading ? 'Eliminando...' : 'Eliminar'}

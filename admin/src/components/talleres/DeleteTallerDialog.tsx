@@ -1,6 +1,7 @@
 'use client';
 
-import { AlertTriangle } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,24 +11,35 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components//ui/alert-dialog';
-import type { Taller } from '@/lib/api';
+} from '@/components/ui/alert-dialog';
+import { Taller } from '@/lib/types/taller.types';
 
 interface DeleteTallerDialogProps {
-  taller: Taller;
+  taller: Taller | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-  isDeleting: boolean;
+  onConfirm: () => Promise<void> | void;
 }
 
-export function DeleteTallerDialog({
+export default function DeleteTallerDialog({
   taller,
   open,
   onOpenChange,
   onConfirm,
-  isDeleting,
 }: DeleteTallerDialogProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await onConfirm();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (!taller) return null;
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -49,10 +61,11 @@ export function DeleteTallerDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isDeleting}
             className="bg-destructive hover:bg-destructive/90"
           >
+            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isDeleting ? 'Eliminando...' : 'Eliminar'}
           </AlertDialogAction>
         </AlertDialogFooter>

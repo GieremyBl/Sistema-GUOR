@@ -9,7 +9,7 @@ import { Textarea } from '@/components//ui/textarea';
 import { Switch } from '@/components//ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components//ui/card';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { Cliente, ClienteUpdateInput } from '@/lib/api';
+import { Cliente, ClienteUpdateInput } from '@/lib/types/cliente.types';
 import { toast } from'@/app/hooks/use-toast';
 
 // Funciones del API (ajústalas según tu implementación)

@@ -13,7 +13,7 @@ import {
 
 interface Filters {
   busqueda: string;
-  estado: string;
+  activo?: boolean;
 }
 
 interface ClienteFiltersProps {
@@ -25,11 +25,11 @@ export default function ClienteFilters({ filters, onFiltersChange }: ClienteFilt
   const handleReset = () => {
     onFiltersChange({
       busqueda: '',
-      estado: '',
+      activo: undefined,
     });
   };
 
-  const hasActiveFilters = filters.busqueda || filters.estado;
+  const hasActiveFilters = filters.busqueda || filters.activo;
 
   return (
     <div className="bg-white p-6 rounded-lg border mb-6 space-y-4">
@@ -59,13 +59,24 @@ export default function ClienteFilters({ filters, onFiltersChange }: ClienteFilt
             Estado
           </label>
           <Select
-            value={filters.estado || 'todos'}
-            onValueChange={(value) =>
-              onFiltersChange({
-                ...filters,
-                estado: value === 'todos' ? '' : value,
-              })
-            }
+            value={filters.activo === true ? 'true' : filters.activo === false ? 'false' : 'todos'} 
+            onValueChange={(value) => {
+              let nuevoActivo: boolean | undefined;
+
+              if (value === 'true') {
+                nuevoActivo = true;
+              } else if (value === 'false') {
+                nuevoActivo = false;
+              } else {
+                // 'todos' o cualquier otro valor
+                nuevoActivo = undefined;
+              }
+
+              onFiltersChange({
+                ...filters,
+                activo: nuevoActivo,
+              });
+            }}
           >
             <SelectTrigger className="cursor-pointer">
               <SelectValue placeholder="Todos los estados" />
@@ -74,10 +85,10 @@ export default function ClienteFilters({ filters, onFiltersChange }: ClienteFilt
               <SelectItem value="todos" className="cursor-pointer">
                 Todos los estados
               </SelectItem>
-              <SelectItem value="ACTIVO" className="cursor-pointer">
+              <SelectItem value="true" className="cursor-pointer">
                 Activo
               </SelectItem>
-              <SelectItem value="INACTIVO" className="cursor-pointer">
+              <SelectItem value="false" className="cursor-pointer">
                 Inactivo
               </SelectItem>
             </SelectContent>

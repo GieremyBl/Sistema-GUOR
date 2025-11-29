@@ -11,21 +11,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-
-interface Usuario {
-  id: string;
-  nombre_completo: string;
-  email: string;
-  telefono?: string;
-  rol: string;
-  estado: string;
-  created_at: string;
-}
+import { Usuario } from '@/lib/types';
 
 interface UserTableProps {
   usuarios: Usuario[];
   loading: boolean;
-  onEdit: (id: string) => void;
+  onEdit: (id: number) => void;
   onDelete: (usuario: Usuario) => void;
   pagination: {
     page: number;
@@ -138,7 +129,7 @@ export default function UserTable({
                       <Edit className="h-4 w-4" />
                     </Button>
                     
-                    {/* ✅ Botón de Eliminar con cursor-pointer */}
+                    {/* Botón de Eliminar con cursor-pointer */}
                     <Button
                       variant="ghost"
                       size="sm"
