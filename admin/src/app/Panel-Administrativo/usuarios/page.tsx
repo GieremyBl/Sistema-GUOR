@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/app/hooks/use-toast';
 import type { Usuario, UsuariosResponse } from '@/lib/types/usuario.types';
-import { getUsuarios, deleteUsuario, createUsuario, updateUsuario } from '@/lib/actions/usuarios.actions'; 
+import { getUsuario, deleteUsuario, createUsuario, updateUsuario } from '@/lib/actions/usuarios.actions'; 
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -57,7 +57,7 @@ export default function UsuariosPage() {
     setLoading(true);
     try {
       // CORRECCIÓN 2: Asegura que getUsuarios solo recibe un argumento (el objeto params)
-      const data: UsuariosResponse = await getUsuarios({
+      const data: UsuariosResponse = await getUsuario({
         page: pagination.page,
         limit: pagination.limit,
         busqueda: filters.busqueda || undefined,
