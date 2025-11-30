@@ -19,8 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components//ui/select';
+import { Usuario } from '@/lib/types';
 
 interface CreateUsuarioDialogProps {
+  initialData?: Usuario;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: any) => Promise<void>;

@@ -19,7 +19,7 @@ export type CreateUsuarioWithPassword = {
 };
 
 export type UpdateUsuarioActionInput = {
-    id: number; // ASUMIENDO ID DE LA TABLA 'usuarios' ES NUMBER
+    id: number; 
     nombre_completo?: string;
     telefono?: string | null;
     rol?: RolUsuario;
@@ -41,12 +41,12 @@ function getSupabaseAdminClient() {
 // ===============================
 /**
  * Obtener usuarios con paginación, búsqueda y filtros.
- * @param {FetchUsuariosParams} params - Parámetros de paginación y filtros.
- * @returns {Promise<UsuariosResponse>} Lista de usuarios y metadatos de paginación.
+ * @param {FetchUsuariosParams} params
+ * @returns {Promise<UsuariosResponse>} 
  */
-export async function getUsuarios({
-    page = 1, // 👈 CORRECCIÓN 1: Valor por defecto para evitar 'possibly undefined'
-    limit = 10, // 👈 CORRECCIÓN 1: Valor por defecto para evitar 'possibly undefined'
+export async function getUsuario({
+    page = 1,
+    limit = 10,
     busqueda,
     rol,
     estado
@@ -54,7 +54,6 @@ export async function getUsuarios({
     try {
         const supabase = getSupabaseAdminClient();
         
-        // Ahora 'page' y 'limit' son definitivamente números
         const offset = (page - 1) * limit; 
 
         let query = supabase
@@ -74,7 +73,7 @@ export async function getUsuarios({
         // Paginación
         const { data: usuarios, error, count: total } = await query
             .order('created_at', { ascending: false })
-            .range(offset, offset + limit - 1); // 'limit' es seguro aquí
+            .range(offset, offset + limit - 1);
 
         if (error) throw error;
         if (total === null) throw new Error('No se pudo obtener el conteo total.');
@@ -88,12 +87,11 @@ export async function getUsuarios({
         };
     } catch (error: any) {
         console.error('Error obteniendo usuarios:', error);
-        // Devolver valores por defecto para evitar errores de retorno
         return { 
             usuarios: [], 
             total: 0, 
-            page: 1, // Usamos un valor seguro
-            limit: 10, // Usamos un valor seguro
+            page: 1,
+            limit: 10,
             totalPages: 0 
         };
     }
@@ -126,9 +124,7 @@ export async function getUsuarioById(id: number): Promise<{ success: true, data:
 // ===============================
 
 /**
-
  * Crear un nuevo usuario
-
  */
 
 export async function createUsuario(input: CreateUsuarioWithPassword): Promise<{ success: true, data: Usuario } | { success: false, error: string }> {
@@ -137,88 +133,46 @@ export async function createUsuario(input: CreateUsuarioWithPassword): Promise<{
 
         let supabase = getSupabaseAdminClient();
 
-
-
         // 1. Crear usuario en Supabase Auth
-
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-
             email: input.email,
-
             password: input.password,
-
             email_confirm: true,
-
             user_metadata: {
-
                 nombre_completo: input.nombre_completo,
-
                 rol: input.rol,
-
             },
-
         });
 
-
-
         if (authError) throw new Error(`Error en Auth: ${authError.message}`);
-
         if (!authData.user) throw new Error('No se pudo crear el usuario en Auth');
 
-
-
         // 2. Crear registro en tabla usuarios
-
         const { data: usuario, error: dbError } = await supabase
-
             .from('usuarios')
-
             .insert({
-
                 auth_id: authData.user.id,
-
                 email: input.email,
-
                 nombre_completo: input.nombre_completo,
-
                 telefono: input.telefono || null,
-
                 rol: input.rol,
-
                 estado: input.estado,
-
                 created_by: '1',
-
             })
-
             .select()
-
             .single();
 
-
-
         if (dbError) {
-
             await supabase.auth.admin.deleteUser(authData.user.id);
-
             throw new Error(`Error en BD: ${dbError.message}`);
-
         }
 
-
-
         revalidatePath('/dashboard/usuarios');
-
         return { success: true, data: usuario as Usuario };
-
     } catch (error: any) {
-
         console.error('Error creando usuario:', error);
-
         return { success: false, error: error.message };
-
     }
-
 }
 
 /*
@@ -277,7 +231,7 @@ export async function updateUsuario(id: number, input: Omit<UpdateUsuarioActionI
 /**
  * Eliminar un usuario
  */
-export async function deleteUsuario(id: number): Promise<{ success: true } | { success: false, error: string }> { // 👈 CORRECCIÓN 3: ID ahora es NUMBER
+export async function deleteUsuario(id: number): Promise<{ success: true } | { success: false, error: string }> {
     try {
         let supabase = getSupabaseAdminClient(); 
 
