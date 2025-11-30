@@ -91,7 +91,6 @@ export async function getProductoById(id: number) {
 
         if (error) throw error;
 
-        // Nota: Asume que 'variantes' es una propiedad adicional permitida/ignorada
         return { success: true, data: data as ProductoConCategoria }; 
     } catch (error: any) {
         console.error('Error al obtener producto:', error);
@@ -138,6 +137,7 @@ export async function createProducto(input: ProductoCreateInput) {
  */
 export async function updateProducto(input: ProductoUpdateInput) {
     try {
+        
         let supabase = getSupabaseAdminClient();
         const { id, ...formData } = input;
         
