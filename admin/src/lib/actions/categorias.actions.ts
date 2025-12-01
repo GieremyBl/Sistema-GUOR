@@ -21,7 +21,7 @@ export async function getCategorias(activoSolo?: boolean) {
 
         let query = supabase
             .from('categorias')
-            .select('*')
+            .select('*, productos(count)')
             .order('nombre', { ascending: true });
 
         if (activoSolo) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components//ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,11 +9,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components//ui/dialog';
-import { Input } from '@/components//ui/input';
-import { Label } from '@/components//ui/label';
-import { Textarea } from '@/components//ui/textarea';
-import { Switch } from '@/components//ui/switch';
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import type { Cliente, ClienteUpdateInput } from '@/lib/types/cliente.types';
 
 interface EditClienteDialogProps {

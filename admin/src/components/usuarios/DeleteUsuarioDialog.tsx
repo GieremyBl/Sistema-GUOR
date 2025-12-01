@@ -6,12 +6,14 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription, // Agregado para accesibilidad
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
-import { Usuario } from '@/lib/types';
+// CORRECCIÓN: Usar la ruta correcta de tipos que usas en el resto del proyecto
+import { Usuario } from '@/lib/types/usuario.types';
 
 interface DeleteUserDialogProps {
   user: Usuario | null;
@@ -28,10 +30,14 @@ export default function DeleteUserDialog({
 }: DeleteUserDialogProps) {
   const [loading, setLoading] = useState(false);
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    // IMPORTANTE: Prevenir el cierre automático del modal
+    e.preventDefault();
+    
     setLoading(true);
     try {
       await onConfirm();
+      // Cerramos manualmente solo cuando la operación termina con éxito
       onClose();
     } catch (error) {
       console.error('Error eliminando usuario:', error);
@@ -45,22 +51,25 @@ export default function DeleteUserDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-          <div className="text-sm text-muted-foreground space-y-4">
-            <p>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el usuario:
-            </p>
-            <div className="p-3 bg-gray-50 rounded-md space-y-1">
-              <p className="font-medium text-gray-900">{user?.nombre_completo}</p>
-              <p className="text-sm text-gray-600">{user?.email}</p>
-            </div>
+          
+          {/* CORRECCIÓN: Usar AlertDialogDescription para accesibilidad */}
+          <AlertDialogDescription>
+            Esta acción no se puede deshacer. Se eliminará permanentemente el usuario.
+          </AlertDialogDescription>
+
+          <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-md">
+            <div className="font-medium text-red-900">{user?.nombre_completo}</div>
+            <div className="text-sm text-red-700">{user?.email}</div>
+            <div className="text-xs text-red-600 mt-1 capitalize">{user?.rol}</div>
           </div>
         </AlertDialogHeader>
+
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={loading}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            className="bg-red-600 hover:bg-red-700 focus:ring-red-600 text-white"
           >
             {loading ? (
               <>
@@ -68,7 +77,7 @@ export default function DeleteUserDialog({
                 Eliminando...
               </>
             ) : (
-              'Eliminar'
+              'Eliminar Usuario'
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

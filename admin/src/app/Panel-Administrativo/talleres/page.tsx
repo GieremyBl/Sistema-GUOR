@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/app/hooks/use-toast';
 
-// Importar tipos y acciones
 import { Taller } from '@/lib/types/taller.types';
 import { 
   getTalleresAction, 
@@ -50,7 +49,6 @@ export default function TalleresPage() {
     totalPages: 0,
   });
   
-  // Estados de diálogos
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [tallerToEdit, setTallerToEdit] = useState<Taller | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -187,7 +185,6 @@ export default function TalleresPage() {
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  // Función para exportar a Excel
   const exportToExcel = () => {
     try {
       const data = talleres.map(taller => ({
@@ -208,41 +205,22 @@ export default function TalleresPage() {
 
       const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre'].length), 10);
       worksheet['!cols'] = [
-        { wch: 10 }, // ID
-        { wch: maxWidth }, // Nombre
-        { wch: 15 }, // RUC
-        { wch: 20 }, // Contacto
-        { wch: 15 }, // Teléfono
-        { wch: 25 }, // Email
-        { wch: 15 }, // Especialidad
-        { wch: 15 }, // Estado
-        { wch: 20 }, // Fecha
+        { wch: 10 }, { wch: maxWidth }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 20 },
       ];
 
       XLSX.writeFile(workbook, `talleres_${new Date().toISOString().split('T')[0]}.xlsx`);
-
-      toast({
-        title: 'Éxito',
-        description: 'Talleres exportados a Excel correctamente',
-      });
+      toast({ title: 'Éxito', description: 'Talleres exportados a Excel correctamente' });
     } catch (error) {
       console.error('Error exportando a Excel:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo exportar a Excel',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo exportar a Excel' });
     }
   };
 
-  // Función para exportar a PDF
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
-      
       doc.setFontSize(18);
       doc.text('Lista de Talleres', 14, 20);
-      
       doc.setFontSize(10);
       doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
 
@@ -263,26 +241,16 @@ export default function TalleresPage() {
       });
 
       doc.save(`talleres_${new Date().toISOString().split('T')[0]}.pdf`);
-
-      toast({
-        title: 'Éxito',
-        description: 'Talleres exportados a PDF correctamente',
-      });
+      toast({ title: 'Éxito', description: 'Talleres exportados a PDF correctamente' });
     } catch (error) {
       console.error('Error exportando a PDF:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo exportar a PDF',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo exportar a PDF' });
     }
   };
 
-  // Función para importar desde Excel
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -291,35 +259,27 @@ export default function TalleresPage() {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
         console.log('Datos importados:', jsonData);
-        
-        toast({
-          title: 'Éxito',
-          description: `Se importaron ${jsonData.length} registros`,
-        });
-        
+        toast({ title: 'Éxito', description: `Se importaron ${jsonData.length} registros` });
       } catch (error) {
         console.error('Error importando archivo:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'No se pudo importar el archivo',
-        });
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo importar el archivo' });
       }
     };
     reader.readAsArrayBuffer(file);
-    
     event.target.value = '';
   };
 
   return (
     <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Talleres</h1>
           <p className="text-gray-600 mt-1">Administra los talleres de producción</p>
         </div>
+        
+        {/* Grupo de botones alineados y con tamaño uniforme */}
         <div className="flex gap-2">
           <input
             type="file"
@@ -330,7 +290,7 @@ export default function TalleresPage() {
           />
           <Button 
             variant="outline" 
-            size="sm"
+            // ELIMINADO: size="sm" para igualar altura
             onClick={() => document.getElementById('import-file')?.click()}
           >
             <Upload className="h-4 w-4 mr-2" />
@@ -339,7 +299,7 @@ export default function TalleresPage() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline"> {/* ELIMINADO: size="sm" */}
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
               </Button>

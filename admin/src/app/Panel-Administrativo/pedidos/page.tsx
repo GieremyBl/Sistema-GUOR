@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,8 +22,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, Eye, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Loader2, Upload, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { useToast } from '@/app/hooks/use-toast';
 import { getPedidos } from '@/lib/actions/pedidos.actions';
 import { 
@@ -31,6 +40,12 @@ import {
 } from '@/lib/types/pedido.types'; 
 import { format } from 'date-fns';
 import { CreatePedidoDialog } from '@/components/pedidos/CreatePedidoDialog';
+
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => void;
+  }
+}
 
 type FilterValue = EstadoPedido | PrioridadPedido | 'all' | '';
 
@@ -59,40 +74,40 @@ export default function PedidosPage() {
   }, [pagination.page, busqueda, estadoFiltro, prioridadFiltro]);
 
   const loadPedidos = async () => {
-  setLoading(true);
-  try {
-    const params: FetchPedidosParams = {
-      page: pagination.page,
-      limit: pagination.limit,
-    };
+    setLoading(true);
+    try {
+      const params: FetchPedidosParams = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
 
-    if (busqueda) params.busqueda = busqueda;
-    if (estadoFiltro) params.estado = estadoFiltro;
-    if (prioridadFiltro) params.prioridad = prioridadFiltro;
+      if (busqueda) params.busqueda = busqueda;
+      if (estadoFiltro) params.estado = estadoFiltro;
+      if (prioridadFiltro) params.prioridad = prioridadFiltro;
 
-    const result = await getPedidos(params);
+      const result = await getPedidos(params);
 
-    if (result.success && result.data) {
-      setPedidos(result.data.pedidos);
-      setPagination((prev) => ({
-        ...prev,
-        total: result.data.meta.total || 0,
-        totalPages: result.data.meta.totalPages,
-      }));
-    } else {
-      throw new Error(result.error || 'Error al cargar pedidos');
+      if (result.success && result.data) {
+        setPedidos(result.data.pedidos);
+        setPagination((prev) => ({
+          ...prev,
+          total: result.data.meta.total || 0,
+          totalPages: result.data.meta.totalPages,
+        }));
+      } else {
+        throw new Error(result.error || 'Error al cargar pedidos');
+      }
+    } catch (error: any) {
+      console.error('Error cargando pedidos:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudieron cargar los pedidos',
+      });
+    } finally {
+      setLoading(false);
     }
-  } catch (error: any) {
-    console.error('Error cargando pedidos:', error);
-    toast({
-      variant: 'destructive',
-      title: 'Error',
-      description: error.message || 'No se pudieron cargar los pedidos',
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleFilterChange = (setter: React.Dispatch<React.SetStateAction<any>>, value: FilterValue) => {
     const filterValue = value === 'all' ? '' : value;
@@ -132,12 +147,76 @@ export default function PedidosPage() {
     router.push(`/Panel-Administrativo/pedidos/${id}`);
   };
 
+  // --- LOGICA EXPORTACIÓN ---
+  const exportToExcel = () => {
+    try {
+      const data = pedidos.map(pedido => ({
+        'ID': pedido.id,
+        'Cliente': pedido.cliente?.razon_social || 'N/A',
+        'RUC': pedido.cliente?.ruc || 'N/A',
+        'Fecha Pedido': format(new Date(pedido.fecha_pedido), 'dd/MM/yyyy'),
+        'Estado': pedido.estado,
+        'Prioridad': pedido.prioridad,
+        'Total': `S/ ${pedido.total.toFixed(2)}`,
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Pedidos');
+
+      const maxWidth = data.reduce((w, r) => Math.max(w, String(r['Cliente']).length), 10);
+      worksheet['!cols'] = [{ wch: 8 }, { wch: maxWidth }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+
+      XLSX.writeFile(workbook, `pedidos_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast({ title: 'Éxito', description: 'Pedidos exportados a Excel' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Falló la exportación a Excel' });
+    }
+  };
+
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(18);
+      doc.text('Reporte de Pedidos', 14, 20);
+      doc.setFontSize(10);
+      doc.text(`Fecha: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
+
+      const tableData = pedidos.map(p => [
+        p.id,
+        p.cliente?.razon_social || 'N/A',
+        format(new Date(p.fecha_pedido), 'dd/MM/yyyy'),
+        p.estado,
+        p.prioridad,
+        `S/ ${p.total.toFixed(2)}`
+      ]);
+
+      (doc as any).autoTable({
+        head: [['ID', 'Cliente', 'Fecha', 'Estado', 'Prioridad', 'Total']],
+        body: tableData,
+        startY: 35,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+
+      doc.save(`pedidos_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast({ title: 'Éxito', description: 'Pedidos exportados a PDF' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Falló la exportación a PDF' });
+    }
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    toast({ title: 'Importación', description: 'Funcionalidad de importar pedidos en desarrollo.' });
+    event.target.value = '';
+  };
+
   const estadoSelectValue = estadoFiltro || 'all';
   const prioridadSelectValue = prioridadFiltro || 'all';
 
   return (
     <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      {/* Header */}
+      {/* Header Alineado Igual que Productos */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Pedidos</h1>
@@ -145,10 +224,48 @@ export default function PedidosPage() {
             Administra todos los pedidos del sistema ({pagination.total} total)
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Pedido
-        </Button>
+        
+        {/* Grupo de Botones */}
+        <div className="flex gap-2">
+          <input
+            type="file"
+            id="import-pedidos"
+            accept=".xlsx,.xls"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <Button 
+            variant="outline" 
+            onClick={() => document.getElementById('import-pedidos')?.click()}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToExcel} className="cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                Excel (.xlsx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF} className="cursor-pointer">
+                <FileText className="h-4 w-4 mr-2 text-red-600" />
+                PDF (.pdf)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Pedido
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -166,7 +283,6 @@ export default function PedidosPage() {
           />
         </div>
 
-        {/* Filtro de Estado */}
         <Select
           value={estadoSelectValue}
           onValueChange={(value: FilterValue) => handleFilterChange(setEstadoFiltro, value)}
@@ -184,7 +300,6 @@ export default function PedidosPage() {
           </SelectContent>
         </Select>
 
-        {/* Filtro de Prioridad */}
         <Select
           value={prioridadSelectValue}
           onValueChange={(value: FilterValue) => handleFilterChange(setPrioridadFiltro, value)}
@@ -266,7 +381,6 @@ export default function PedidosPage() {
             </Table>
           </div>
 
-          {/* Paginación */}
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-gray-700">
               Mostrando{' '}
@@ -305,7 +419,6 @@ export default function PedidosPage() {
         </>
       )}
 
-      {/* Dialog de Crear Pedido */}
       <CreatePedidoDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}

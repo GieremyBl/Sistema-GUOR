@@ -1,16 +1,16 @@
 "use client";
 
 import { Pedido, ESTADO_PEDIDO_LABELS, ESTADO_PEDIDO_COLORS, PRIORIDAD_PEDIDO_LABELS, PRIORIDAD_PEDIDO_COLORS } from '@types';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components//ui/card';
-import { Button } from '@/components//ui/button';
-import { Badge } from '@/components//ui/badge';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components//ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import { Eye, Edit, Trash2, MoreVertical, Package, Calendar, User, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';

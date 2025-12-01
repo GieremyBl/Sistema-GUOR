@@ -1,7 +1,7 @@
 'use client';
 
 import { Edit, Trash2, FolderOpen, Power } from 'lucide-react';
-import { Button } from '@/components//ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -9,25 +9,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components//ui/table';
-import { Badge } from '@/components//ui/badge';
-
-export interface CategoriaTable {
-  id: string;
-  nombre: string;
-  descripcion?: string;
-  activo: boolean;
-  created_at: string;
-  updated_at?: string | null;
-  _count?: {
-    productos: number;
-  };
-}
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import type { CategoriaTable } from '@/lib/types/categoria.types';
 
 export interface CategoriasTableProps {
   categorias: CategoriaTable[];
   loading: boolean;
-  onEdit: (id: string) => void;
+  onEdit: (id: string) => void; 
   onDelete: (categoria: CategoriaTable) => void;
   onToggleActivo: (categoria: CategoriaTable) => void;
 }
@@ -39,6 +28,7 @@ export default function CategoriasTable({
   onDelete,
   onToggleActivo,
 }: CategoriasTableProps) {
+  
   const getEstadoColor = (activo: boolean) => {
     return activo
       ? 'bg-green-100 text-green-800'
@@ -67,7 +57,7 @@ export default function CategoriasTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-white">
         <Table>
           <TableHeader>
             <TableRow>
@@ -104,7 +94,7 @@ export default function CategoriasTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onEdit(categoria.id)}
+                      onClick={() => onEdit(categoria.id.toString())}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>

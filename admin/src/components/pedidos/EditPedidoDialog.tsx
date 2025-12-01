@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components//ui/dialog';
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -22,17 +22,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components//ui/form';
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components//ui/select';
-import { Button } from '@/components//ui/button';
-import { Calendar } from '@/components//ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components//ui/popover';
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from'@/app/hooks/use-toast';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';

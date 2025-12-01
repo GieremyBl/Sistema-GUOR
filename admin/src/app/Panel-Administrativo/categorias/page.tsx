@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import CategoriasTable, { CategoriaTable } from '@/components/categorias/CategoriasTable';
+import CategoriasTable from '@/components/categorias/CategoriasTable'; 
 import CreateCategoriaDialog from '@/components/categorias/CreateCategoriaDialog';
 import EditCategoriaDialog from '@/components/categorias/EditCategoriaDialog';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
+  AlertDialogDescription, 
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Categoria, CategoriaCreateInput, CategoriaUpdateInput } from '@/lib/types/categoria.types';
+import type { Categoria, CategoriaCreateInput, CategoriaUpdateInput, CategoriaTable } from '@/lib/types/categoria.types';
 import { getCategorias, createCategoria, updateCategoria, deleteCategoria } from '@/lib/actions/categorias.actions';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -49,57 +49,43 @@ export default function CategoriasPage() {
     loadCategorias();
   }, []);
 
- const loadCategorias = async () => {
-  setLoading(true);
-  try {
-    console.log('🔍 Intentando cargar categorías...');
-    const result = await getCategorias();
-    console.log('📦 Resultado:', result);
-    
-    if (result.success && result.data) {
-      console.log('✅ Categorías cargadas:', result.data.length);
-      setCategorias(result.data);
-    } else {
-      console.error('❌ Error en result:', result.error);
-      throw new Error(result.error || 'Error al cargar categorías');
+  const loadCategorias = async () => {
+    setLoading(true);
+    try {
+      const result = await getCategorias();
+      if (result.success && result.data) {
+        setCategorias(result.data);
+      } else {
+        throw new Error(result.error || 'Error al cargar categorías');
+      }
+    } catch (error: any) {
+      console.error('Error cargando categorías:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudieron cargar las categorías',
+      });
+    } finally {
+      setLoading(false);
     }
-  } catch (error: any) {
-    console.error('💥 Error cargando categorías:', error);
-    toast({
-      variant: 'destructive',
-      title: 'Error',
-      description: error.message || 'No se pudieron cargar las categorías',
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleCreate = async (data: CategoriaCreateInput) => {
     try {
       const result = await createCategoria(data);
-      
       if (result.success) {
-        toast({
-          title: 'Éxito',
-          description: 'Categoría creada correctamente',
-        });
+        toast({ title: 'Éxito', description: 'Categoría creada correctamente' });
         setShowCreateDialog(false);
         await loadCategorias();
       } else {
         throw new Error(result.error);
       }
     } catch (error: any) {
-      console.error('Error creando categoría:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo crear la categoría',
-      });
-      throw error;
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
 
+  // CORRECCIÓN 3: Agregamos la función handleEdit que faltaba
   const handleEdit = (id: string) => {
     const categoria = categorias.find((c) => c.id.toString() === id);
     if (categoria) {
@@ -110,25 +96,15 @@ export default function CategoriasPage() {
   const handleUpdate = async (id: string, data: CategoriaUpdateInput) => {
     try {
       const result = await updateCategoria(Number(id), data);
-      
       if (result.success) {
-        toast({
-          title: 'Éxito',
-          description: 'Categoría actualizada correctamente',
-        });
+        toast({ title: 'Éxito', description: 'Categoría actualizada correctamente' });
         setCategoriaToEdit(null);
         await loadCategorias();
       } else {
         throw new Error(result.error);
       }
     } catch (error: any) {
-      console.error('Error actualizando categoría:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar la categoría',
-      });
-      throw error;
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
 
@@ -139,33 +115,22 @@ export default function CategoriasPage() {
       descripcion: categoria.descripcion || null,
       activo: categoria.activo,
       created_at: categoria.created_at,
-      updated_at: categoria.updated_at || undefined,
     };
     setCategoriaToDelete(categoriaApi);
   };
 
   const confirmDelete = async () => {
     if (!categoriaToDelete) return;
-
     try {
       const result = await deleteCategoria(categoriaToDelete.id);
-      
       if (result.success) {
-        toast({
-          title: 'Éxito',
-          description: 'Categoría eliminada correctamente',
-        });
+        toast({ title: 'Éxito', description: 'Categoría eliminada correctamente' });
         await loadCategorias();
       } else {
         throw new Error(result.error);
       }
     } catch (error: any) {
-      console.error('Error eliminando categoría:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo eliminar la categoría',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {
       setCategoriaToDelete(null);
     }
@@ -176,153 +141,98 @@ export default function CategoriasPage() {
       const result = await updateCategoria(Number(categoria.id), { 
         activo: !categoria.activo 
       });
-      
       if (result.success) {
-        toast({
-          title: 'Éxito',
-          description: `Categoría ${!categoria.activo ? 'activada' : 'desactivada'} correctamente`,
-        });
+        toast({ title: 'Éxito', description: `Estado actualizado` });
         await loadCategorias();
       } else {
         throw new Error(result.error);
       }
     } catch (error: any) {
-      console.error('Error cambiando estado:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo cambiar el estado',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
 
-  // Exportar a Excel
+  // --- EXPORTACIÓN ---
   const exportToExcel = () => {
     try {
       const data = categorias.map(cat => ({
         'ID': cat.id,
         'Nombre': cat.nombre,
         'Descripción': cat.descripcion || 'N/A',
+        // @ts-ignore
+        'Productos': cat.productos ? cat.productos[0]?.count : 0, 
         'Estado': cat.activo ? 'Activo' : 'Inactivo',
-        'Fecha de Creación': cat.created_at ? new Date(cat.created_at).toLocaleDateString('es-PE') : 'N/A',
+        'Fecha Creación': cat.created_at ? new Date(cat.created_at).toLocaleDateString('es-PE') : 'N/A',
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Categorías');
-
-      worksheet['!cols'] = [
-        { wch: 8 },
-        { wch: 30 },
-        { wch: 50 },
-        { wch: 15 },
-        { wch: 20 },
-      ];
-
+      const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre'].length), 10);
+      worksheet['!cols'] = [{ wch: 8 }, { wch: maxWidth }, { wch: 40 }, { wch: 10 }, { wch: 15 }, { wch: 20 }];
       XLSX.writeFile(workbook, `categorias_${new Date().toISOString().split('T')[0]}.xlsx`);
-
-      toast({
-        title: 'Éxito',
-        description: 'Categorías exportadas a Excel correctamente',
-      });
+      toast({ title: 'Éxito', description: 'Exportado a Excel' });
     } catch (error) {
-      console.error('Error exportando a Excel:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo exportar a Excel',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Falló la exportación' });
     }
   };
 
-  // Exportar a PDF
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
-      
       doc.setFontSize(18);
       doc.text('Lista de Categorías', 14, 20);
-      
       doc.setFontSize(10);
       doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
 
       const tableData = categorias.map(cat => [
         cat.nombre,
-        cat.descripcion || 'N/A',
+        cat.descripcion || '-',
+        // @ts-ignore
+        cat.productos ? cat.productos[0]?.count : 0,
         cat.activo ? 'Activo' : 'Inactivo',
       ]);
 
       (doc as any).autoTable({
-        head: [['Nombre', 'Descripción', 'Estado']],
+        head: [['Nombre', 'Descripción', 'Prod.', 'Estado']],
         body: tableData,
         startY: 35,
         styles: { fontSize: 8 },
         headStyles: { fillColor: [59, 130, 246] },
       });
-
       doc.save(`categorias_${new Date().toISOString().split('T')[0]}.pdf`);
-
-      toast({
-        title: 'Éxito',
-        description: 'Categorías exportadas a PDF correctamente',
-      });
+      toast({ title: 'Éxito', description: 'Exportado a PDF' });
     } catch (error) {
-      console.error('Error exportando a PDF:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo exportar a PDF',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Falló la exportación' });
     }
   };
 
-  // Importar desde Excel
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
-
-        console.log('Datos importados:', jsonData);
-
-        let importadas = 0;
-        for (const row of jsonData) {
-          try {
-            await createCategoria({
-              nombre: row.Nombre || row.nombre,
-              descripcion: row.Descripción || row.descripcion || null,
-              activo: row.Estado === 'Activo' || row.estado === 'activo',
-            });
-            importadas++;
-          } catch (err) {
-            console.error('Error importando fila:', row, err);
-          }
-        }
+        const jsonData: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
         
-        toast({
-          title: 'Éxito',
-          description: `Se importaron ${importadas} de ${jsonData.length} categorías`,
-        });
-
+        let count = 0;
+        for (const row of jsonData) {
+            await createCategoria({
+                nombre: row.Nombre || row.nombre,
+                descripcion: row.Descripción || row.descripcion || null,
+                activo: true
+            });
+            count++;
+        }
+        toast({ title: 'Éxito', description: `Se importaron ${count} categorías` });
         await loadCategorias();
       } catch (error) {
-        console.error('Error importando archivo:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'No se pudo importar el archivo',
-        });
+        toast({ variant: 'destructive', title: 'Error', description: 'Error al importar' });
       }
     };
     reader.readAsArrayBuffer(file);
-    
     event.target.value = '';
   };
 
@@ -331,13 +241,16 @@ export default function CategoriasPage() {
   );
 
   const categoriasTransformadas: CategoriaTable[] = categoriasFiltradas.map((cat) => ({
-    id: cat.id.toString(),
+    id: cat.id, 
     nombre: cat.nombre,
     descripcion: cat.descripcion || undefined,
     activo: cat.activo,
     created_at: cat.created_at || '',
     updated_at: cat.updated_at,
-    _count: { productos: 0 },
+    _count: { 
+        // @ts-ignore
+        productos: cat.productos ? cat.productos[0]?.count : 0 
+    },
   }));
 
   return (
@@ -345,10 +258,9 @@ export default function CategoriasPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Categorías</h1>
-          <p className="text-gray-600 mt-1">
-            Administra las categorías de productos ({categorias.length} total)
-          </p>
+          <p className="text-gray-600 mt-1">Organiza tus productos ({categorias.length} total)</p>
         </div>
+        
         <div className="flex gap-2">
           <input
             type="file"
@@ -359,7 +271,6 @@ export default function CategoriasPage() {
           />
           <Button 
             variant="outline" 
-            size="sm"
             onClick={() => document.getElementById('import-file')?.click()}
           >
             <Upload className="h-4 w-4 mr-2" />
@@ -368,7 +279,7 @@ export default function CategoriasPage() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
               </Button>
@@ -376,11 +287,11 @@ export default function CategoriasPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={exportToExcel} className="cursor-pointer">
                 <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
-                Exportar a Excel
+                Excel (.xlsx)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={exportToPDF} className="cursor-pointer">
                 <FileText className="h-4 w-4 mr-2 text-red-600" />
-                Exportar a PDF
+                PDF (.pdf)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -407,7 +318,7 @@ export default function CategoriasPage() {
       <CategoriasTable
         categorias={categoriasTransformadas}
         loading={loading}
-        onEdit={handleEdit}
+        onEdit={handleEdit} 
         onDelete={handleDelete}
         onToggleActivo={handleToggleActivo}
       />

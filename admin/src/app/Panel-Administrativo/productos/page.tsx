@@ -21,7 +21,6 @@ import { useToast } from '@/app/hooks/use-toast';
 import { 
   getProductos, 
   createProducto, 
-  updateProducto, 
   deleteProducto,
   updateStockProducto
 } from '@/lib/actions/productos.actions';
@@ -58,7 +57,8 @@ export default function ProductosPage() {
   const [productoToDelete, setProductoToDelete] = useState<ProductoConCategoria | null>(null);
   const [productoStock, setProductoStock] = useState<ProductoConCategoria | null>(null); 
   const [categorias, setCategorias] = useState<Categoria[]>([]);
- useEffect(() => {
+
+  useEffect(() => {
     loadProductos();
     loadCategorias();
   }, [filters, pagination.page]);
@@ -128,10 +128,7 @@ export default function ProductosPage() {
     try {
       const result = await createProducto(data);
       if (result.success) {
-        toast({
-          title: 'Éxito',
-          description: 'Producto creado correctamente',
-        });
+        toast({ title: 'Éxito', description: 'Producto creado correctamente' });
         setShowCreateDialog(false);
         await loadProductos();
       } else {
@@ -148,45 +145,16 @@ export default function ProductosPage() {
     }
   };
 
-  const handleUpdate = async (id: number, data: any) => {
-    try {
-      const result = await updateProducto({ id, ...data });
-      if (result.success) {
-        toast({
-          title: 'Éxito',
-          description: 'Producto actualizado correctamente',
-        });
-        setProductoToEdit(null);
-        setIsEditDialogOpen(false);
-        await loadProductos();
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error: any) {
-      console.error('Error actualizando producto:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el producto',
-      });
-      throw error;
-    }
-  };
-
   const handleDelete = (producto: ProductoConCategoria) => {
     setProductoToDelete(producto);
   };
 
   const confirmDelete = async () => {
     if (!productoToDelete) return;
-
     try {
       const result = await deleteProducto(productoToDelete.id);
       if (result.success) {
-        toast({
-          title: 'Éxito',
-          description: 'Producto eliminado correctamente',
-        });
+        toast({ title: 'Éxito', description: 'Producto eliminado correctamente' });
         await loadProductos();
       } else {
         throw new Error(result.error);
@@ -203,18 +171,11 @@ export default function ProductosPage() {
     }
   };
 
-  const handleStockUpdate = async (
-    id: number, 
-    cantidad: number, 
-    operacion: 'agregar' | 'reducir' | 'establecer'
-  ) => {
+  const handleStockUpdate = async (id: number, cantidad: number, operacion: 'agregar' | 'reducir' | 'establecer') => {
     try {
       const result = await updateStockProducto(id, cantidad, operacion);
       if (result.success) {
-        toast({
-          title: 'Éxito',
-          description: 'Stock actualizado correctamente',
-        });
+        toast({ title: 'Éxito', description: 'Stock actualizado correctamente' });
         setProductoStock(null);
         await loadProductos();
       } else {
@@ -231,6 +192,7 @@ export default function ProductosPage() {
     }
   };
 
+  // --- Funciones de Exportación ---
   const exportToExcel = () => {
     try {
       const data = productos.map(producto => ({
@@ -250,41 +212,21 @@ export default function ProductosPage() {
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
 
       const maxWidth = data.reduce((w, r) => Math.max(w, r['Nombre'].length), 10);
-      worksheet['!cols'] = [
-        { wch: 8 },
-        { wch: maxWidth },
-        { wch: 30 },
-        { wch: 20 },
-        { wch: 12 },
-        { wch: 10 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 20 },
-      ];
+      worksheet['!cols'] = [{ wch: 8 }, { wch: maxWidth }, { wch: 30 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 20 }];
 
       XLSX.writeFile(workbook, `productos_${new Date().toISOString().split('T')[0]}.xlsx`);
-
-      toast({
-        title: 'Éxito',
-        description: 'Productos exportados a Excel correctamente',
-      });
+      toast({ title: 'Éxito', description: 'Productos exportados a Excel correctamente' });
     } catch (error) {
       console.error('Error exportando a Excel:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo exportar a Excel',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo exportar a Excel' });
     }
   };
 
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
-      
       doc.setFontSize(18);
       doc.text('Lista de Productos', 14, 20);
-      
       doc.setFontSize(10);
       doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
 
@@ -305,25 +247,16 @@ export default function ProductosPage() {
       });
 
       doc.save(`productos_${new Date().toISOString().split('T')[0]}.pdf`);
-
-      toast({
-        title: 'Éxito',
-        description: 'Productos exportados a PDF correctamente',
-      });
+      toast({ title: 'Éxito', description: 'Productos exportados a PDF correctamente' });
     } catch (error) {
       console.error('Error exportando a PDF:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo exportar a PDF',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo exportar a PDF' });
     }
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -332,35 +265,26 @@ export default function ProductosPage() {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
         console.log('Datos importados:', jsonData);
-        
-        toast({
-          title: 'Éxito',
-          description: `Se importaron ${jsonData.length} registros`,
-        });
-        
+        toast({ title: 'Éxito', description: `Se importaron ${jsonData.length} registros` });
       } catch (error) {
         console.error('Error importando archivo:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'No se pudo importar el archivo',
-        });
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo importar el archivo' });
       }
     };
     reader.readAsArrayBuffer(file);
-    
     event.target.value = '';
   };
 
   return (
     <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Productos</h1>
           <p className="text-gray-500 mt-1">Administra el inventario de productos</p>
         </div>
+        
         <div className="flex gap-2">
           <input
             type="file"
@@ -371,7 +295,6 @@ export default function ProductosPage() {
           />
           <Button 
             variant="outline" 
-            size="sm"
             onClick={() => document.getElementById('import-file')?.click()}
           >
             <Upload className="h-4 w-4 mr-2" />
@@ -380,7 +303,7 @@ export default function ProductosPage() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
               </Button>
@@ -388,18 +311,16 @@ export default function ProductosPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={exportToExcel} className="cursor-pointer">
                 <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
-                Exportar a Excel
+                Excel (.xlsx)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={exportToPDF} className="cursor-pointer">
                 <FileText className="h-4 w-4 mr-2 text-red-600" />
-                Exportar a PDF
+                PDF (.pdf)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button 
-            onClick={() => setShowCreateDialog(true)}
-            className="cursor-pointer">
+          <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nuevo Producto
           </Button>
@@ -432,7 +353,8 @@ export default function ProductosPage() {
           if (!open) setProductoToEdit(null);
         }}
         producto={productoToEdit}
-        onSubmit={handleUpdate}
+        categorias={categorias}
+        onSuccess={loadProductos}
       />
 
       <DeleteProductoDialog

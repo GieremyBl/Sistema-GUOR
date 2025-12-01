@@ -13,7 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components//ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
 import { useToast } from'@/app/hooks/use-toast';
 

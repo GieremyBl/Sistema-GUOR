@@ -23,9 +23,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { updateProducto } from '@/lib/actions/productos.actions';
-
 import { Producto } from '@/lib/types/producto.types';
 import { Categoria } from '@/lib/types/categoria.types';
+
+// Definimos el tipo de estado para el casting
+type EstadoProducto = "activo" | "inactivo" | "agotado" | "descontinuado";
 
 export default function EditProductoDialog({
   producto,
@@ -33,12 +35,14 @@ export default function EditProductoDialog({
   categoriasError = null,
   open = true,
   onOpenChange,
+  onSuccess,
 }: {
   producto: Producto | null;
   categorias?: Categoria[];
   categoriasError?: string | null;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onSuccess?: () => void;
 }) {
   
   const [loading, setLoading] = useState(false);
@@ -75,7 +79,6 @@ export default function EditProductoDialog({
     e.preventDefault();
     if (!producto) return;
 
-    // Validaciones
     if (!formData.nombre.trim()) return alert('El nombre es requerido');
     if (!formData.precio || parseFloat(formData.precio) <= 0) return alert('Precio inválido');
     if (!formData.categoria_id) return alert('Categoría requerida');
@@ -90,33 +93,25 @@ export default function EditProductoDialog({
         categoria_id: Number(formData.categoria_id),
         stock: Math.max(0, parseInt(formData.stock) || 0),
         stock_minimo: Math.max(0, parseInt(formData.stock_minimo) || 0),
-        imagen: formData.imagen.trim() || null,
-        estado: formData.estado,
+        imagen: formData.imagen.trim() || undefined,
+        estado: formData.estado as EstadoProducto,
       };
       
-      const result = await updateProducto(payload as any);
+      const result = await updateProducto(payload);
 
       if (result.success) {
-        toast({
-            title: 'Éxito',
-            description: 'Producto actualizado correctamente',
-        });
-
+        toast({ title: 'Éxito', description: 'Producto actualizado correctamente' });
+        
+        if (onSuccess) onSuccess(); 
+        
         router.refresh();
-
-        if (onOpenChange) {
-            onOpenChange(false);
-        }
+        if (onOpenChange) onOpenChange(false);
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
       console.error('Error al actualizar producto:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: (error as Error).message || 'Error al guardar',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: (error as Error).message });
     } finally {
       setLoading(false);
     }
@@ -124,180 +119,147 @@ export default function EditProductoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar Producto</DialogTitle>
-          <DialogDescription>
-            Modifica los datos del producto "{producto?.nombre}"
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden flex flex-col bg-white">
+        
+        <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+            
+            <DialogHeader className="px-6 py-4 border-b z-10 bg-white">
+              <DialogTitle>Editar Producto</DialogTitle>
+              <DialogDescription>
+                Modifica los datos del producto "{producto?.nombre}"
+              </DialogDescription>
+            </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nombre */}
-          <div className="space-y-2">
-            <Label htmlFor="nombre">Nombre del Producto *</Label>
-            <Input
-              id="nombre"
-              placeholder="Ingresa el nombre del producto"
-              value={formData.nombre}
-              onChange={(e) =>
-                setFormData({ ...formData, nombre: e.target.value })
-              }
-              required
-              disabled={loading}
-            />
-          </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                
+                <div className="space-y-2">
+                    <Label htmlFor="nombre">Nombre del Producto *</Label>
+                    <Input
+                      id="nombre"
+                      value={formData.nombre}
+                      onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                      required
+                      disabled={loading}
+                    />
+                </div>
 
-          {/* Descripción */}
-          <div className="space-y-2">
-            <Label htmlFor="descripcion">Descripción</Label>
-            <Textarea
-              id="descripcion"
-              placeholder="Describe el producto"
-              value={formData.descripcion}
-              onChange={(e) =>
-                setFormData({ ...formData, descripcion: e.target.value })
-              }
-              rows={3}
-              disabled={loading}
-            />
-          </div>
+                <div className="space-y-2">
+                    <Label htmlFor="descripcion">Descripción</Label>
+                    <Textarea
+                      id="descripcion"
+                      value={formData.descripcion}
+                      onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                      rows={3}
+                      disabled={loading}
+                      className="resize-none"
+                    />
+                </div>
 
-          {/* Precio y Categoría */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="precio">Precio (S/) *</Label>
-              <Input
-                id="precio"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={formData.precio}
-                onChange={(e) =>
-                  setFormData({ ...formData, precio: e.target.value })
-                }
-                required
-                disabled={loading}
-              />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="precio">Precio (S/) *</Label>
+                      <Input
+                        id="precio"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.precio}
+                        onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="categoria_id">Categoría *</Label>
+                      <Select
+                        value={formData.categoria_id}
+                        onValueChange={(value) => setFormData({ ...formData, categoria_id: value })}
+                        disabled={loading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoriasError ? (
+                            <SelectItem value="error" disabled>Error al cargar</SelectItem>
+                          ) : categorias.length > 0 ? (
+                            categorias.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id.toString()}>
+                                {cat.nombre}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="no-data" disabled>No hay categorías</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="stock">Stock</Label>
+                      <Input
+                        id="stock"
+                        type="number"
+                        min="0"
+                        value={formData.stock}
+                        onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="stock_minimo">Stock Mínimo</Label>
+                      <Input
+                        id="stock_minimo"
+                        type="number"
+                        min="0"
+                        value={formData.stock_minimo}
+                        onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="imagen">URL de Imagen</Label>
+                    <Input
+                      id="imagen"
+                      type="url"
+                      value={formData.imagen}
+                      onChange={(e) => setFormData({ ...formData, imagen: e.target.value })}
+                      disabled={loading}
+                    />
+                </div>
+
+                <div className="space-y-2 pb-2">
+                    <Label htmlFor="estado">Estado *</Label>
+                    <Select
+                      value={formData.estado}
+                      onValueChange={(value) => setFormData({ ...formData, estado: value })}
+                      disabled={loading}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="activo">Activo</SelectItem>
+                        <SelectItem value="inactivo">Inactivo</SelectItem>
+                        <SelectItem value="agotado">Agotado</SelectItem>
+                        <SelectItem value="descontinuado">Descontinuado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="categoria_id">Categoría *</Label>
-              <Select
-                value={formData.categoria_id}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, categoria_id: value })
-                }
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoriasError ? (
-                    <SelectItem value="" disabled>
-                      Error al cargar categorías
-                    </SelectItem>
-                  ) : categorias.length > 0 ? (
-                    categorias.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id.toString()}>
-                        {cat.nombre}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="" disabled>
-                      No hay categorías disponibles
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Stock */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stock">Stock</Label>
-              <Input
-                id="stock"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={formData.stock}
-                onChange={(e) =>
-                  setFormData({ ...formData, stock: e.target.value })
-                }
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="stock_minimo">Stock Mínimo</Label>
-              <Input
-                id="stock_minimo"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={formData.stock_minimo}
-                onChange={(e) =>
-                  setFormData({ ...formData, stock_minimo: e.target.value })
-                }
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          {/* Imagen */}
-          <div className="space-y-2">
-            <Label htmlFor="imagen">URL de Imagen</Label>
-            <Input
-              id="imagen"
-              type="url"
-              placeholder="https://ejemplo.com/imagen.jpg"
-              value={formData.imagen}
-              onChange={(e) =>
-                setFormData({ ...formData, imagen: e.target.value })
-              }
-              disabled={loading}
-            />
-          </div>
-
-          {/* Estado */}
-          <div className="space-y-2">
-            <Label htmlFor="estado">Estado *</Label>
-            <Select
-              value={formData.estado}
-              onValueChange={(value) =>
-                setFormData({ ...formData, estado: value })
-              }
-              disabled={loading}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="activo">Activo</SelectItem>
-                <SelectItem value="inactivo">Inactivo</SelectItem>
-                <SelectItem value="agotado">Agotado</SelectItem>
-                <SelectItem value="descontinuado">Descontinuado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange?.(false)}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Guardando...' : 'Guardar Cambios'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter className="px-6 py-4 border-t bg-gray-50">
+                <Button type="button" variant="outline" onClick={() => onOpenChange?.(false)} disabled={loading}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Guardando...' : 'Guardar Cambios'}
+                </Button>
+            </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

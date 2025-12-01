@@ -10,11 +10,11 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components//ui/select';
-import { Input } from '@/components//ui/input';
-import { Button } from '@/components//ui/button';
-import { Card, CardContent } from '@/components//ui/card';
-import { Label } from '@/components//ui/label';
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { X, Filter } from 'lucide-react';
 
 interface PedidosFiltersProps {

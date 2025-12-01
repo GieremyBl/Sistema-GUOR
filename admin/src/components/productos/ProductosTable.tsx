@@ -35,6 +35,7 @@ export default function ProductosTable({
   pagination,
   onPageChange,
 }: ProductosTableProps) {
+  
   const getEstadoColor = (estado: string) => {
     const colors: Record<string, string> = {
       activo: 'bg-green-100 text-green-800',
@@ -59,17 +60,29 @@ export default function ProductosTable({
     return <Badge className="bg-gray-100 text-gray-800">{stock} unidades</Badge>;
   };
 
-  // Función helper para obtener el nombre de la categoría
+  // --- CORRECCIÓN IMPORTANTE ---
+  // Esta función ahora maneja correctamente si categoria es Objeto o Array
   const getCategoriaNombre = (producto: ProductoConCategoria): string => {
-    if (Array.isArray(producto.categoria) && producto.categoria.length > 0) {
-      return producto.categoria[0].nombre;
+    const cat = producto.categoria as any; // Usamos any para flexibilidad
+    
+    if (!cat) return 'Sin categoría';
+    
+    // Caso 1: Es un array (como lo tenías antes)
+    if (Array.isArray(cat) && cat.length > 0) {
+      return cat[0].nombre;
     }
+    
+    // Caso 2: Es un objeto directo (como lo devuelve Supabase habitualmente)
+    if (cat.nombre) {
+      return cat.nombre;
+    }
+
     return 'Sin categoría';
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex justify-center items-center h-64 border rounded-md bg-white">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -77,7 +90,7 @@ export default function ProductosTable({
 
   if (productos.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 border rounded-md bg-white">
         <PackageOpen className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">No hay productos</h3>
         <p className="mt-1 text-sm text-gray-500">
@@ -89,7 +102,7 @@ export default function ProductosTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-white">
         <Table>
           <TableHeader>
             <TableRow>
@@ -110,17 +123,17 @@ export default function ProductosTable({
                       <img
                         src={producto.imagen}
                         alt={producto.nombre}
-                        className="h-10 w-10 rounded object-cover"
+                        className="h-10 w-10 rounded object-cover border"
                       />
                     ) : (
-                      <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center">
+                      <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center border">
                         <Package className="h-5 w-5 text-gray-400" />
                       </div>
                     )}
                     <div>
-                      <div className="font-medium">{producto.nombre}</div>
+                      <div className="font-medium text-gray-900">{producto.nombre}</div>
                       {producto.descripcion && (
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                        <div className="text-xs text-gray-500 truncate max-w-[200px]" title={producto.descripcion}>
                           {producto.descripcion}
                         </div>
                       )}
@@ -128,7 +141,8 @@ export default function ProductosTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="font-normal text-gray-700">
+                    {/* Usamos la función corregida */}
                     {getCategoriaNombre(producto)}
                   </Badge>
                 </TableCell>
@@ -178,37 +192,39 @@ export default function ProductosTable({
       </div>
 
       {/* Paginación */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-700">
-          Mostrando{' '}
-          <span className="font-medium">
-            {(pagination.page - 1) * pagination.limit + 1}
-          </span>{' '}
-          a{' '}
-          <span className="font-medium">
-            {Math.min(pagination.page * pagination.limit, pagination.total)}
-          </span>{' '}
-          de <span className="font-medium">{pagination.total}</span> resultados
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between py-4">
+            <div className="text-sm text-gray-700">
+            Mostrando{' '}
+            <span className="font-medium">
+                {(pagination.page - 1) * pagination.limit + 1}
+            </span>{' '}
+            a{' '}
+            <span className="font-medium">
+                {Math.min(pagination.page * pagination.limit, pagination.total)}
+            </span>{' '}
+            de <span className="font-medium">{pagination.total}</span> resultados
+            </div>
+            <div className="flex gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+            >
+                Anterior
+            </Button>
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(pagination.page + 1)}
+                disabled={pagination.page >= pagination.totalPages}
+            >
+                Siguiente
+            </Button>
+            </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(pagination.page - 1)}
-            disabled={pagination.page === 1}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(pagination.page + 1)}
-            disabled={pagination.page >= pagination.totalPages}
-          >
-            Siguiente
-          </Button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

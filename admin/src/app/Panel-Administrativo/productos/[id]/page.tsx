@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/app/hooks/use-toast';
 import EditProductoDialog from '@/components/productos/EditProductoDialog';
-import { updateProducto } from '@/lib/actions/productos.actions';
 
 interface EditProductoClientProps {
   producto: any;
@@ -22,7 +21,6 @@ export default function EditProductoClient({
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      // Si cierran el modal, volvemos a la lista
       router.push('/Panel-Administrativo/productos');
     }
   };

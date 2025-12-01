@@ -94,7 +94,7 @@ const navItems: NavItem[] = [
         icon: ShoppingCart,
       },
       {
-        title: 'Historial',
+        title: 'Historial de Pedidos',
         href: '/Panel-Administrativo/pedidos/historial',
         icon: FileText,
       },

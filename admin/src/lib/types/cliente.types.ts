@@ -41,3 +41,18 @@ export interface ClientesResponse {
     totalPages: number;
     error?: string;
 }
+
+export interface ClientesTableProps {
+    clientes: Cliente[];
+    onEdit: (cliente: Cliente) => void; 
+    onDelete: (cliente: Cliente) => void;
+    onToggleActivo: (cliente: Cliente) => void;
+    isLoading?: boolean;
+    pagination: { 
+        page: number; 
+        limit: number; 
+        total: number; 
+        totalPages: number;
+    };
+    onPageChange: (page: number) => void;
+}

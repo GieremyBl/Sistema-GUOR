@@ -26,7 +26,7 @@ export type UpdateUsuarioActionInput = {
     estado?: EstadoUsuario;
 };
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_UR!;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function getSupabaseAdminClient() {

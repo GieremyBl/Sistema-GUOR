@@ -124,7 +124,9 @@ export async function createProducto(input: ProductoCreateInput) {
             .single();
 
         if (error) throw error;
-        revalidatePath('/dashboard/productos');
+
+        revalidatePath('Panel-Administrativo/productos');
+
         return { success: true, data: data as ProductoConCategoria };
     } catch (error: any) {
         console.error('Error al crear producto:', error);
@@ -164,8 +166,8 @@ export async function updateProducto(input: ProductoUpdateInput) {
 
         if (error) throw error;
 
-        revalidatePath('/dashboard/productos');
-        revalidatePath(`/dashboard/productos/${id}`);
+        revalidatePath('/Panel-Administrativo/productos');
+        revalidatePath(`/Panel-Administrativo/productos/${id}`);
         return { success: true, data: data as ProductoConCategoria };
     } catch (error: any) {
         console.error('Error al actualizar producto:', error);
@@ -185,7 +187,7 @@ export async function deleteProducto(id: number) {
             .eq('id', id);
 
         if (error) throw error;
-        revalidatePath('/dashboard/productos');
+        revalidatePath('/Panel-Administrativo/productos');
         return { success: true };
     } catch (error: any) {
         console.error('Error al eliminar producto:', error);
@@ -234,7 +236,7 @@ export async function updateStockProducto(
             .single();
 
         if (error) throw error;
-        revalidatePath('/dashboard/productos');
+        revalidatePath('/Panel-Administrativo/productos');
         return { success: true, data: data as Producto };
     } catch (error: any) {
         console.error('Error al actualizar stock:', error);
