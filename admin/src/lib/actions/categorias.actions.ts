@@ -1,11 +1,15 @@
 'use server';
+
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'; 
 import { revalidatePath } from 'next/cache';
+
 import type { 
     Categoria, 
     CategoriaCreateInput, 
     CategoriaUpdateInput,
-    CategoriaConProductos
+    CategoriaConProductos,
+    CategoriaConConteo,
+    FiltrosCategorias
 } from '@/lib/types/categoria.types'; 
 
 // ===============================
@@ -13,7 +17,7 @@ import type {
 // ===============================
 
 /**
- * Obtiene todas las categorías o solo las activas.
+ * Obtiene todas las categorías o solo las activas, incluyendo el conteo de productos.
  */
 export async function getCategorias(activoSolo?: boolean) {
     try {
@@ -21,21 +25,25 @@ export async function getCategorias(activoSolo?: boolean) {
 
         let query = supabase
             .from('categorias')
-            .select('*, productos(count)')
+            .select('*, productos(count)', { count: 'exact' })
             .order('nombre', { ascending: true });
-
-        if (activoSolo) {
-            query = query.eq('activo', true);
-        }
-
+            // ...
+        
         const { data, error } = await query;
 
         if (error) throw error;
+        
+        const dataMapped: CategoriaConConteo[] = (data as any[]).map((c: any) => ({
+            ...c,
+            _count: {
+                productos: c.productos, 
+            }
+        }));
 
-        return { success: true, data: data as Categoria[] }; 
+        return { success: true, data: dataMapped }; 
     } catch (error: any) {
         console.error('Error al obtener categorías:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message, data: [] };
     }
 }
 
@@ -62,6 +70,7 @@ export async function getCategoriaById(id: number) {
             .single();
 
         if (error) throw error;
+
         return { success: true, data: data as CategoriaConProductos }; 
     } catch (error: any) {
         console.error('Error al obtener categoría:', error);
@@ -164,5 +173,64 @@ export async function toggleCategoriaActivo(id: number, activo: boolean) {
     } catch (error: any) {
         console.error('Error al cambiar estado:', error);
         return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Obtiene categorías con filtros de búsqueda y estado.
+ */
+export async function getCategoriasConFiltros(filtros: FiltrosCategorias = {}) {
+    try {
+        let supabase = getSupabaseAdminClient(); 
+
+        const { busqueda, activo, page = 1, limit = 10 } = filtros; 
+
+        let query = supabase
+            .from('categorias')
+            .select('*, productos!count(*)', { count: 'exact' }) 
+            .order('nombre', { ascending: true });
+ 
+        // 1. Filtrar por Estado (Activa/Inactiva)
+        if (activo !== undefined) {
+            query = query.eq('activo', activo);
+        }
+
+        // 2. Filtrar por Búsqueda (Nombre o Descripción)
+        if (busqueda) {
+            query = query.or(`nombre.ilike.%${busqueda}%,descripcion.ilike.%${busqueda}%`);
+        }
+        
+        // Paginación (si se implementa)
+        const start = (page - 1) * limit;
+        const end = start + limit - 1;
+        query = query.range(start, end);
+
+
+        const { data, error, count } = await query;
+
+        if (error) throw error;
+        
+        // Mapeo para estandarizar el objeto CategoriaConConteo
+        const dataMapped: CategoriaConConteo[] = data.map((c: any) => ({
+            ...c,
+            _count: {
+                productos: c.productos, 
+            }
+        }));
+
+
+        return { 
+            success: true, 
+            data: dataMapped,
+            pagination: {
+                total: count,
+                page: page,
+                limit: limit,
+                pages: Math.ceil((count || 0) / limit),
+            }
+        }; 
+    } catch (error: any) {
+        console.error('Error al obtener categorías con filtros:', error);
+        return { success: false, error: error.message, data: [], pagination: { total: 0, page: 1, limit: 10, pages: 0 } };
     }
 }

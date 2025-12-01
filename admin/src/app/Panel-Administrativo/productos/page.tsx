@@ -26,8 +26,8 @@ import {
 } from '@/lib/actions/productos.actions';
 import { getCategorias } from '@/lib/actions/categorias.actions';
 import { Categoria } from '@/lib/types/categoria.types';
-import type { ProductoConCategoria, FiltrosProductos } from '@/lib/types/producto.types';
-
+import type { ProductoConCategoria, FiltrosProductos, ProductoFiltersState, CategoryOption } from '@/lib/types/producto.types';
+import ProductoFilters from '@/components/productos/ProductoFilters';
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => void;
@@ -38,18 +38,24 @@ export default function ProductosPage() {
   const { toast } = useToast();
   const [productos, setProductos] = useState<ProductoConCategoria[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<FiltrosProductos>({
-    busqueda: '',
-    estado: '',
-    categoriaId: '',
-    stockBajo: false,
-  });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-  });
+  const [filterState, setFilterState] = useState<ProductoFiltersState>({
+        busqueda: '',
+        estado: '',
+        categoria: '',
+    });
+  const filters: FiltrosProductos = {
+        busqueda: filterState.busqueda,
+        estado: filterState.estado,
+        categoriaId: filterState.categoria,
+        stockBajo: false,
+    };
+
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+    });
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [productoToEdit, setProductoToEdit] = useState<ProductoConCategoria | null>(null);
@@ -59,9 +65,9 @@ export default function ProductosPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
 
   useEffect(() => {
-    loadProductos();
-    loadCategorias();
-  }, [filters, pagination.page]);
+        loadProductos();
+        loadCategorias();
+    }, [filterState, pagination.page]);
 
   const loadProductos = async () => {
     setLoading(true);
@@ -276,6 +282,11 @@ export default function ProductosPage() {
     event.target.value = '';
   };
 
+  const categoriaOptions: CategoryOption[] = categorias.map(cat => ({
+        id: cat.id.toString(),
+        name: cat.nombre,
+    }));
+
   return (
     <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
@@ -327,11 +338,16 @@ export default function ProductosPage() {
         </div>
       </div>
 
+      <ProductoFilters
+          filters={filterState}
+          onFiltersChange={setFilterState}
+          categorias={categoriaOptions}
+      />
       <ProductosTable
         productos={productos}
         loading={loading}
         filters={filters}
-        onFiltersChange={setFilters}
+       onFiltersChange={(newFilters) => {setFilterState(newFilters as ProductoFiltersState)}}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onStock={handleStock}

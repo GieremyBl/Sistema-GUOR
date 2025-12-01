@@ -106,12 +106,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen relative bg-gradient-to-br from-gray-50 via-gray-100 to-white flex flex-col items-center justify-center p-4">
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
-        style={{ backgroundImage: "url('/costura.jpg')" }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15" // Opacidad reducida
+          style={{ backgroundImage: "url('/costura.jpg')" }}
       />
       
+      {/* ... Títulos de la marca ... */}
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900">
@@ -122,7 +123,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <Card className="shadow-2xl border-0">
+        <Card className="shadow-xl border-0 rounded-xl">
           <CardHeader className="space-y-1 pb-6">
             <CardTitle className="text-2xl font-bold">Iniciar Sesión</CardTitle>
             <CardDescription>
@@ -169,9 +170,9 @@ export default function LoginPage() {
               </div>
 
               <Button 
-                type="submit" 
-                className="w-full h-11 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700"
-                disabled={isLoading}
+                  type="submit" 
+                  className="w-full h-11 bg-gradient-to-r from-rose-500 to-pink-600 transition-all duration-300 hover:from-rose-600 hover:to-pink-700 hover:shadow-md hover:scale-[1.01]" // Animación agregada
+                  disabled={isLoading}
               >
                 {isLoading ? (
                   "Iniciando sesión..."

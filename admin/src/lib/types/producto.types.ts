@@ -56,3 +56,39 @@ export interface ProductoCreateInput {
 export interface ProductoUpdateInput extends Partial<ProductoCreateInput> {
     id: number;
 }
+
+/**
+ * Interfaz para el estado local del componente ProductFilters.
+ * Es una versión simplificada de FiltrosProductos para el componente.
+ */
+export interface ProductoFiltersState {
+    busqueda: string;
+    categoria: string; 
+    estado: string;
+}
+
+/**
+ * Opciones de Estado de Producto para el Select.
+ */
+export const PRODUCT_STATUS_OPTIONS = [
+    { value: 'activo', name: 'Activo' },
+    { value: 'inactivo', name: 'Inactivo' },
+    { value: 'agotado', name: 'Agotado' }, 
+];
+
+// Nueva interfaz para las opciones de categoría
+export interface CategoryOption {
+    id: string; // Para el Select value
+    name: string;
+}
+
+// Interfaz final para ProductoFiltersProps:
+export interface ProductoFiltersProps {
+    filters: ProductoFiltersState;
+    onFiltersChange: (filters: ProductoFiltersState) => void;
+    categorias: CategoryOption[]; 
+}
+
+export interface ProductoListProps {
+    categorias: CategoryOption[];
+}

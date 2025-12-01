@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/Toaster";
 import "./globals.css";
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-sans',
+});
 
 export const metadata: Metadata = {
   title: "Modas y Estilos Guor - Sistema de Gestión",
@@ -14,7 +20,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="antialiased">
+      <body className={`min-h-screen bg-background antialiased ${inter.variable}`}
+      >
         {children}
       <Toaster />
       </body>
