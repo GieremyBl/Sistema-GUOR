@@ -45,7 +45,7 @@ if (!global.JWT_SECRET_KEY) {
 const allowedOrigins = [
   // Desarrollo local
   'http://localhost:3000',
-  'http://localhost:8000',
+  'http://localhost:3001',
   'http://localhost:5000',
   
   // Variables de entorno (Vercel)

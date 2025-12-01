@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: sistema-guor-api
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm run dev
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_URL
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+    healthCheckPath: /health
