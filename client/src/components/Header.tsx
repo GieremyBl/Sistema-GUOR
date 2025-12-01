@@ -1,135 +1,231 @@
+// src/components/Header.tsx - Header con logo más grande
 'use client';
 
-import { ShoppingCart, Search, Menu, X, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { ShoppingCart, User, Heart, Search, Menu, LogOut } from 'lucide-react';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useCartStore } from '@/lib/store';
 import { useAuthStore } from '@/lib/auth';
 
 export default function Header() {
+  const pathname = usePathname();
   const router = useRouter();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const totalItems = useCartStore((state) => state.getTotalItems());
   const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const logout = useAuthStore((state) => state.logout);
+  
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Verificar si estamos en la página de productos (requiere auth)
+  const isProductsPage = pathname === '/productos';
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push('/');
+    setIsUserMenuOpen(false);
   };
 
   return (
-    <header className='w-full bg-white border-b-2 border-[#d4a574]'>
-      <div className='max-w-7xl mx-auto px-4 py-4'>
+    <header className='bg-white shadow-sm sticky top-0 z-50'>
+      {/* Barra superior de promoción */}
+      <div className='bg-gradient-to-r from-[#d4a574] to-[#c97a97] text-white text-center py-2 px-4'>
+        <p className='text-sm font-medium'>🎉 ¡OFERTAS EXCLUSIVAS! Hasta 50% de descuento en toda la tienda</p>
+      </div>
+
+      <nav className='max-w-7xl mx-auto px-4 py-6'>
         <div className='flex items-center justify-between'>
-          {/* Logo */}
-          <Link href='/' className='flex items-center gap-3 group'>
-            <div className='w-12 h-12 bg-gradient-to-br from-[#d4a574] to-[#c97a97] rounded-full flex items-center justify-center shadow-md'>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <text x="12" y="16" fontFamily="serif" fontSize="14" fill="white" textAnchor="middle" fontWeight="bold">G</text>
-              </svg>
-            </div>
-            <div className='flex flex-col'>
-              <span className='text-xs font-light tracking-widest text-[#8B6F47]'>MODAS Y ESTILOS</span>
-              <span className='text-xl font-bold bg-gradient-to-r from-[#d4a574] to-[#c97a97] bg-clip-text text-transparent'>GUOR</span>
-            </div>
+          {/* Logo - MÁS GRANDE */}
+          <Link href='/' className='flex items-center'>
+            <img 
+              src='/logo-guor.png' 
+              alt='GUOR - Modas y Estilos' 
+              className='h-20 md:h-24 w-auto object-contain hover:opacity-90 transition-opacity'
+            />
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className='hidden md:flex items-center gap-8'>
-            <Link href='/' className='text-gray-700 hover:text-[#d4a574] transition font-medium'>
+          {/* Navegación Desktop */}
+          <div className='hidden md:flex items-center gap-6'>
+            <Link 
+              href='/' 
+              className={`font-medium transition ${pathname === '/' ? 'text-[#d4a574]' : 'text-gray-700 hover:text-[#d4a574]'}`}
+            >
               Inicio
             </Link>
-            <Link href='/#productos' className='text-gray-700 hover:text-[#d4a574] transition font-medium'>
+            <Link 
+              href='/productos' 
+              className={`font-medium transition ${pathname === '/productos' ? 'text-[#d4a574]' : 'text-gray-700 hover:text-[#d4a574]'}`}
+            >
               Productos
             </Link>
-            <Link href='/#' className='text-gray-700 hover:text-[#d4a574] transition font-medium'>
+            <Link 
+              href='/ofertas' 
+              className={`font-medium transition ${pathname === '/ofertas' ? 'text-[#d4a574]' : 'text-gray-700 hover:text-[#d4a574]'}`}
+            >
               Ofertas
             </Link>
-            <Link href='/#' className='text-gray-700 hover:text-[#d4a574] transition font-medium'>
+            <Link 
+              href='/contacto' 
+              className={`font-medium transition ${pathname === '/contacto' ? 'text-[#d4a574]' : 'text-gray-700 hover:text-[#d4a574]'}`}
+            >
               Contacto
             </Link>
-          </nav>
+          </div>
 
-          {/* Search and Cart */}
-          <div className='flex items-center gap-4'>
-            <div className='hidden md:flex items-center bg-[#f5f3f0] rounded-full px-4 py-2'>
-              <Search className='w-4 h-4 text-[#d4a574]' />
-              <input
-                type='text'
-                placeholder='Buscar productos...'
-                className='bg-transparent outline-none ml-2 w-40 text-sm'
-              />
+          {/* Barra de búsqueda - Solo en páginas de productos */}
+          {isProductsPage && (
+            <div className='hidden lg:flex items-center flex-1 max-w-md mx-8'>
+              <div className='relative w-full'>
+                <input
+                  type='text'
+                  placeholder='Buscar productos...'
+                  className='w-full px-4 py-2 pr-10 border-2 border-gray-200 rounded-full focus:outline-none focus:border-[#d4a574]'
+                />
+                <Search className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5' />
+              </div>
             </div>
+          )}
 
-            {/* Cart Icon */}
-            <Link href='/carrito' className='relative'>
-              <ShoppingCart className='w-6 h-6 text-gray-700 hover:text-[#d4a574] transition' />
-              {totalItems > 0 && (
-                <span className='absolute -top-2 -right-2 bg-[#c97a97] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center'>
-                  {totalItems}
-                </span>
-              )}
+          {/* Iconos de acción */}
+          <div className='flex items-center gap-3'>
+            {/* Favoritos */}
+            <button className='hidden md:block p-2 hover:bg-gray-100 rounded-full transition'>
+              <Heart className='w-6 h-6 text-gray-700' />
+            </button>
+
+            {/* Carrito */}
+            <Link href='/carrito' className='relative p-2 hover:bg-gray-100 rounded-full transition'>
+              <ShoppingCart className='w-6 h-6 text-gray-700' />
+              <span className='absolute -top-1 -right-1 bg-gradient-to-r from-[#d4a574] to-[#c97a97] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold'>
+                0
+              </span>
             </Link>
 
-            {/* User Info and Logout */}
-            {user && (
-              <div className='hidden md:flex items-center gap-2'>
-                <div className='text-right'>
-                  <p className='text-xs font-semibold text-gray-700'>{user.nombre}</p>
-                  <p className='text-xs text-gray-500'>{user.correo}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className='p-2 hover:bg-[#f5f3f0] rounded-lg transition'
-                  title='Cerrar sesión'
-                >
-                  <LogOut className='w-5 h-5 text-gray-700 hover:text-[#d4a574]' />
-                </button>
-              </div>
-            )}
+            {/* Usuario */}
+            <div className='relative'>
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className='flex items-center gap-2 p-2 hover:bg-gray-100 rounded-full transition'
+              >
+                <User className='w-6 h-6 text-gray-700' />
+                {isAuthenticated && user && (
+                  <span className='hidden md:block text-sm font-medium text-gray-700'>
+                    {user.nombre || user.correo?.split('@')[0] || 'Usuario'}
+                  </span>
+                )}
+              </button>
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className='md:hidden'
-            >
-              {isMenuOpen ? (
-                <X className='w-6 h-6' />
-              ) : (
-                <Menu className='w-6 h-6' />
+              {/* Menú desplegable */}
+              {isUserMenuOpen && (
+                <div className='absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2'>
+                  {isAuthenticated && user ? (
+                    <>
+                      <div className='px-4 py-3 border-b border-gray-100'>
+                        <p className='text-sm font-medium text-gray-900'>
+                          {user.nombre} {user.apellidos}
+                        </p>
+                        <p className='text-xs text-gray-500'>{user.correo}</p>
+                        {user.empresa && (
+                          <p className='text-xs text-gray-400 mt-1'>{user.empresa}</p>
+                        )}
+                      </div>
+                      
+                      <Link
+                        href='/perfil'
+                        className='flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition'
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <User className='w-4 h-4' />
+                        <span>Mi Perfil</span>
+                      </Link>
+                      
+                      <Link
+                        href='/pedidos'
+                        className='flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition'
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <ShoppingCart className='w-4 h-4' />
+                        <span>Mis Pedidos</span>
+                      </Link>
+                      
+                      <hr className='my-2' />
+                      
+                      <button
+                        onClick={handleLogout}
+                        className='w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition'
+                      >
+                        <LogOut className='w-4 h-4' />
+                        <span>Cerrar Sesión</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href='/login'
+                        className='block px-4 py-2 text-gray-700 hover:bg-gray-100 transition'
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Iniciar Sesión
+                      </Link>
+                      <Link
+                        href='/register'
+                        className='block px-4 py-2 text-[#d4a574] hover:bg-gray-100 transition font-medium'
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Registrarse
+                      </Link>
+                    </>
+                  )}
+                </div>
               )}
+            </div>
+
+            {/* Menú móvil */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className='md:hidden p-2 hover:bg-gray-100 rounded-full transition'
+            >
+              <Menu className='w-6 h-6 text-gray-700' />
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <nav className='md:hidden mt-4 flex flex-col gap-4 pb-4 border-t-2 border-[#f5f3f0] pt-4'>
-            <Link href='/' className='text-gray-700 hover:text-[#d4a574] transition font-medium'>
-              Inicio
-            </Link>
-            <Link href='/#productos' className='text-gray-700 hover:text-[#d4a574] transition font-medium'>
-              Productos
-            </Link>
-            <Link href='/#' className='text-gray-700 hover:text-[#d4a574] transition font-medium'>
-              Ofertas
-            </Link>
-            <Link href='/#' className='text-gray-700 hover:text-[#d4a574] transition font-medium'>
-              Contacto
-            </Link>
-            <div className='flex items-center bg-[#f5f3f0] rounded-full px-4 py-2'>
-              <Search className='w-4 h-4 text-[#d4a574]' />
-              <input
-                type='text'
-                placeholder='Buscar...'
-                className='bg-transparent outline-none ml-2 w-full text-sm'
-              />
+        {/* Menú móvil expandido */}
+        {isMobileMenuOpen && (
+          <div className='md:hidden mt-4 pb-4 border-t pt-4'>
+            <div className='flex flex-col gap-3'>
+              <Link 
+                href='/' 
+                className='text-gray-700 hover:text-[#d4a574] transition font-medium'
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Inicio
+              </Link>
+              <Link 
+                href='/productos' 
+                className='text-gray-700 hover:text-[#d4a574] transition font-medium'
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Productos
+              </Link>
+              <Link 
+                href='/ofertas' 
+                className='text-gray-700 hover:text-[#d4a574] transition font-medium'
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Ofertas
+              </Link>
+              <Link 
+                href='/contacto' 
+                className='text-gray-700 hover:text-[#d4a574] transition font-medium'
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Contacto
+              </Link>
             </div>
-          </nav>
+          </div>
         )}
-      </div>
+      </nav>
     </header>
   );
 }
