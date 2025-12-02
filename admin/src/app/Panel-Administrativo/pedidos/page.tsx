@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -174,9 +172,13 @@ export default function PedidosPage() {
     }
   };
 
-  const exportToPDF = () => {
+   const exportToPDF = async () => {
     try {
+      // Importación dinámica para evitar problemas en SSR
+      const { jsPDF } = await import('jspdf');
+      await import('jspdf-autotable');
       const doc = new jsPDF();
+
       doc.setFontSize(18);
       doc.text('Reporte de Pedidos', 14, 20);
       doc.setFontSize(10);
@@ -191,7 +193,7 @@ export default function PedidosPage() {
         `S/ ${p.total.toFixed(2)}`
       ]);
 
-      (doc as any).autoTable({
+      doc.autoTable({
         head: [['ID', 'Cliente', 'Fecha', 'Estado', 'Prioridad', 'Total']],
         body: tableData,
         startY: 35,

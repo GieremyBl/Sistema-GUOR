@@ -6,8 +6,6 @@ import UserFilters from '@/components/usuarios/UsuarioFilters';
 import DeleteUsuarioDialog from '@/components/usuarios/DeleteUsuarioDialog';
 import CreateUsuarioDialog from '@/components/usuarios/CreateUsuarioDialog';
 import EditUsuarioDialog from '@/components/usuarios/EditUsuarioDialog';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload, FileSpreadsheet, FileText } from 'lucide-react';
@@ -189,9 +187,13 @@ export default function UsuariosPage() {
   };
 
   // Función para exportar a PDF
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     try {
+      // Importación dinámica para evitar problemas en SSR
+      const { jsPDF } = await import('jspdf');
+      await import('jspdf-autotable');
       const doc = new jsPDF();
+
       doc.setFontSize(18);
       doc.text('Lista de Usuarios', 14, 20);
       doc.setFontSize(10);
@@ -203,7 +205,7 @@ export default function UsuariosPage() {
         usuario.rol,
         usuario.estado,
       ]);
-      (doc as any).autoTable({
+      doc.autoTable({
         head: [['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado']],
         body: tableData,
         startY: 35,

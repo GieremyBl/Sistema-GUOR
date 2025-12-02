@@ -6,8 +6,6 @@ import TallerFilters from '@/components/talleres/TallerFilters';
 import DeleteTallerDialog from '@/components/talleres/DeleteTallerDialog';
 import CreateTallerDialog from '@/components/talleres/CreateTallerDialog';
 import EditTallerDialog from '@/components/talleres/EditTallerDialog';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload, FileSpreadsheet, FileText } from 'lucide-react';
@@ -216,9 +214,13 @@ export default function TalleresPage() {
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     try {
+      // Importación dinámica para evitar problemas en SSR
+      const { jsPDF } = await import('jspdf');
+      await import('jspdf-autotable');
       const doc = new jsPDF();
+
       doc.setFontSize(18);
       doc.text('Lista de Talleres', 14, 20);
       doc.setFontSize(10);
@@ -232,7 +234,7 @@ export default function TalleresPage() {
         taller.estado,
       ]);
 
-      (doc as any).autoTable({
+      doc.autoTable({
         head: [['Nombre', 'RUC', 'Contacto', 'Teléfono', 'Estado']],
         body: tableData,
         startY: 35,

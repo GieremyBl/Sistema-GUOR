@@ -6,8 +6,6 @@ import CreateProductoDialog from '@/components/productos/CreateProductoDialog';
 import DeleteProductoDialog from '@/components/productos/DeleteProductoDialog';
 import EditProductoDialog from '@/components/productos/EditProductoDialog';
 import StockDialog from '@/components/productos/StockDialog';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload, FileSpreadsheet, FileText } from 'lucide-react';
@@ -228,8 +226,12 @@ export default function ProductosPage() {
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     try {
+      // Importación dinámica para evitar problemas en SSR
+      const { jsPDF } = await import('jspdf');
+      await import('jspdf-autotable');
+
       const doc = new jsPDF();
       doc.setFontSize(18);
       doc.text('Lista de Productos', 14, 20);
@@ -244,7 +246,7 @@ export default function ProductosPage() {
         producto.estado,
       ]);
 
-      (doc as any).autoTable({
+      doc.autoTable({
         head: [['Nombre', 'Categoría', 'Precio', 'Stock', 'Estado']],
         body: tableData,
         startY: 35,

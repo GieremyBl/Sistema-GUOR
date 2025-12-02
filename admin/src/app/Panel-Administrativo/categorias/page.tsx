@@ -26,8 +26,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { Categoria, CategoriaCreateInput, CategoriaUpdateInput, CategoriaConConteo, CategoriaFiltersState} from '@/lib/types/categoria.types';
 import { getCategorias, createCategoria, updateCategoria, deleteCategoria } from '@/lib/actions/categorias.actions';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import CategoriaFilters from '@/components/categorias/CategoriaFilters'; 
 
@@ -180,31 +178,35 @@ export default function CategoriasPage() {
         }
     };
 
-    const exportToPDF = () => {
-        try {
-            const doc = new jsPDF();
+  const exportToPDF = async () => {
+    try {
+       // Importación dinámica para evitar problemas en SSR
+       const { jsPDF } = await import('jspdf');
+       await import('jspdf-autotable');
+       const doc = new jsPDF();
+
             doc.setFontSize(18);
             doc.text('Lista de Categorías', 14, 20);
             doc.setFontSize(10);
             doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')}`, 14, 28);
 
-            const tableData = categorias.map(cat => [
-                cat.nombre,
-                cat.descripcion || '-',
-                // @ts-ignore
-                cat.productos ? cat.productos[0]?.count : 0,
-                cat.activo ? 'Activo' : 'Inactivo',
-            ]);
+        const tableData = categorias.map(cat => [
+            cat.nombre,
+            cat.descripcion || '-',
+            // @ts-ignore
+            cat.productos ? cat.productos[0]?.count : 0,
+            cat.activo ? 'Activo' : 'Inactivo',
+        ]);
 
-            (doc as any).autoTable({
-                head: [['Nombre', 'Descripción', 'Prod.', 'Estado']],
-                body: tableData,
-                startY: 35,
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [59, 130, 246] },
-            });
-            doc.save(`categorias_${new Date().toISOString().split('T')[0]}.pdf`);
-            toast({ title: 'Éxito', description: 'Exportado a PDF' });
+        doc.autoTable({
+            head: [['Nombre', 'Descripción', 'Prod.', 'Estado']],
+            body: tableData,
+            startY: 35,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [59, 130, 246] },
+        });
+        doc.save(`categorias_${new Date().toISOString().split('T')[0]}.pdf`);
+        toast({ title: 'Éxito', description: 'Exportado a PDF' });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Falló la exportación' });
         }
