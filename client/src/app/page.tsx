@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ShoppingCart, User, Heart, Search } from 'lucide-react';
 import { useState } from 'react';
 import Hero from '@/components/Hero';
-
+import OfertasHero from '@/components/OfertasHero';
 export default function HomePage() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -12,7 +12,7 @@ export default function HomePage() {
     <div className='min-h-screen'>
       {/* Hero Component */}
       <Hero />
-
+      <OfertasHero />
       {/* Categorías */}
       <section className='py-20 bg-[#faf8f6]'>
         <div className='max-w-7xl mx-auto px-4'>

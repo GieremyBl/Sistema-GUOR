@@ -30,7 +30,7 @@ export default function Header() {
     <header className='bg-white shadow-sm sticky top-0 z-50'>
       {/* Barra superior de promoción */}
       <div className='bg-gradient-to-r from-[#d4a574] to-[#c97a97] text-white text-center py-2 px-4'>
-        <p className='text-sm font-medium'>🎉 ¡OFERTAS EXCLUSIVAS! Hasta 50% de descuento en toda la tienda</p>
+        <p className='text-sm font-medium'>¡OFERTAS EXCLUSIVAS! Hasta 50% de descuento en toda la tienda</p>
       </div>
 
       <nav className='max-w-7xl mx-auto px-4 py-6'>
