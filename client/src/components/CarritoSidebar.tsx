@@ -164,8 +164,24 @@ export default function CarritoSidebar({ isOpen, onClose }: CarritoSidebarProps)
               {/* Subtotal */}
               <div className='flex justify-between items-center'>
                 <span className='text-gray-600'>Subtotal:</span>
-                <span className='text-2xl font-bold text-gray-900'>
+                <span className='font-semibold text-gray-900'>
                   S/ {total.toFixed(2)}
+                </span>
+              </div>
+
+              {/* IGV */}
+              <div className='flex justify-between items-center'>
+                <span className='text-gray-600'>IGV (18%):</span>
+                <span className='font-semibold text-gray-900'>
+                  S/ {(total * 0.18).toFixed(2)}
+                </span>
+              </div>
+
+              {/* Total with IGV */}
+              <div className='flex justify-between items-center border-t pt-4'>
+                <span className='font-bold text-gray-900'>Total:</span>
+                <span className='text-2xl font-bold text-[#d4a574]'>
+                  S/ {(total * 1.18).toFixed(2)}
                 </span>
               </div>
 
@@ -185,7 +201,7 @@ export default function CarritoSidebar({ isOpen, onClose }: CarritoSidebarProps)
 
 
               <p className='text-xs text-center text-gray-500'>
-                Los impuestos y envío se calcularán en el checkout
+                Envío gratis en toda la ciudad
               </p>
             </div>
           )}
