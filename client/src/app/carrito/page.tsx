@@ -14,7 +14,9 @@ export default function CartPage() {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const getTotalPrice = useCartStore((state) => state.getTotalPrice());
 
-  const totalWithTax = getTotalPrice * 1.08;
+  const subtotal = getTotalPrice;
+  const igv = subtotal * 0.18; // IGV 18%
+  const totalWithIGV = subtotal + igv;
   const isBelowMinimum = getTotalPrice < MINIMUM_ORDER;
 
   if (items.length === 0) {
@@ -142,21 +144,21 @@ export default function CartPage() {
               <div className='space-y-4 mb-6 border-b-2 border-[#f5f3f0] pb-6'>
                 <div className='flex justify-between text-gray-600'>
                   <span className='font-medium'>Subtotal</span>
-                  <span className='font-semibold'>S/. {getTotalPrice.toFixed(2)}</span>
+                  <span className='font-semibold'>S/. {subtotal.toFixed(2)}</span>
                 </div>
                 <div className='flex justify-between text-gray-600'>
                   <span className='font-medium'>Envío</span>
                   <span className='font-semibold text-green-600'>Gratis</span>
                 </div>
                 <div className='flex justify-between text-gray-600'>
-                  <span className='font-medium'>Impuestos (8%)</span>
-                  <span className='font-semibold'>S/. {(getTotalPrice * 0.08).toFixed(2)}</span>
+                  <span className='font-medium'>IGV (18%)</span>
+                  <span className='font-semibold'>S/. {igv.toFixed(2)}</span>
                 </div>
               </div>
 
               <div className='flex justify-between text-2xl font-bold text-gray-900 mb-8 pb-4 border-b-2 border-[#f5f3f0]'>
                 <span>Total</span>
-                <span className='text-[#d4a574]'>S/. {totalWithTax.toFixed(2)}</span>
+                <span className='text-[#d4a574]'>S/. {totalWithIGV.toFixed(2)}</span>
               </div>
 
               <button 

@@ -102,3 +102,16 @@ export interface ProductoConsultado {
     sku: string;
     stock: number;
 }
+
+export interface DatosCliente {
+
+    email: string;
+    nombre: string; 
+    apellidos?: string; 
+    // Campos opcionales que coinciden con las columnas de la tabla 'clientes'
+    ruc?: string | number;
+    razon_social?: string;
+    telefono?: string | number;
+    direccion?: string;
+    auth_id?: string; 
+}
