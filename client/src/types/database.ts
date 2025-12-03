@@ -19,8 +19,18 @@ export interface Producto {
   stock_minimo: number;
   updated_at: string | null;
   estado: 'activo' | 'inactivo';
-  // Relación con categoría
   categorias?: Categoria;
+}
+
+export interface ItemCarrito {
+  producto_id: number;
+  nombre: string;
+  imagen: string;
+  precio: number;
+  cantidad: number;
+  talla: string;
+  color?: string;
+  stock: number;
 }
 
 export interface VarianteProducto {

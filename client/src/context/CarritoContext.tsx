@@ -1,17 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-interface ItemCarrito {
-  producto_id: number;
-  nombre: string;
-  imagen: string;
-  precio: number;
-  cantidad: number;
-  talla: string;
-  color?: string;
-  stock: number;
-}
+import { ItemCarrito } from '@/types/database';
 
 interface CarritoContextType {
   items: ItemCarrito[];
