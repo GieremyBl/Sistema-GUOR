@@ -1,8 +1,8 @@
-// src/hooks/usePermissions.ts
+"use client";
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/components/supabase/client';
-import { hasPermission } from '@/components/roles-config';
+import { supabase } from '@/lib/supabase/client';
+import { hasPermission } from '@/lib/roles-config';
 
 interface User {
   id: string;
@@ -46,6 +46,26 @@ export function usePermissions() {
     return hasPermission(user.rol.toLowerCase(), action, resource);
   };
 
+  const checkPermission = (permission: string): boolean => {
+    if (!user) return false;
+    // Soporta ambos formatos: "usuarios.view" y "view:usuarios"
+    if (permission.includes('.')) {
+      const [resource, action] = permission.split('.') as [string, 'create' | 'view' | 'edit' | 'delete' | 'export'];
+      return can(action, resource);
+    } else {
+      const [action, resource] = permission.split(':') as ['create' | 'view' | 'edit' | 'delete' | 'export', string];
+      return can(action, resource);
+    }
+  };
+
+  const checkAnyPermission = (permissions: string[]): boolean => {
+    return permissions.some(permission => checkPermission(permission));
+  };
+
+  const checkAllPermissions = (permissions: string[]): boolean => {
+    return permissions.every(permission => checkPermission(permission));
+  };
+
   const isAdmin = (): boolean => {
     return user?.rol.toLowerCase() === 'administrador';
   };
@@ -53,7 +73,11 @@ export function usePermissions() {
   return {
     user,
     loading,
+    isLoading: loading, // alias para consistencia con PermissionGuard
     can,
     isAdmin,
+    hasPermission: checkPermission,
+    hasAnyPermission: checkAnyPermission,
+    hasAllPermissions: checkAllPermissions,
   };
 }
