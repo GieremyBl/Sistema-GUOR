@@ -25,3 +25,10 @@ export interface FilterOptions {
   color?: string;
   search?: string;
 }
+
+export interface ProductoDB {
+    id: number;
+    nombre: string;
+    sku: string;
+    stock: number;
+}

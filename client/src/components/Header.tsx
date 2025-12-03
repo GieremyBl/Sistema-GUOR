@@ -6,16 +6,19 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, User, Heart, Search, Menu, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '@/lib/auth';
-
+import { useCarrito } from '@/context/CarritoContext';
+import CarritoSidebar from './CarritoSidebar';
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const logout = useAuthStore((state) => state.logout);
-  
+  const { cantidadItems } = useCarrito();
+
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [carritoOpen, setCarritoOpen] = useState(false);
 
   // Verificar si estamos en la página de productos (requiere auth)
   const isProductsPage = pathname === '/productos';
@@ -27,6 +30,7 @@ export default function Header() {
   };
 
   return (
+    <>
     <header className='bg-white shadow-sm sticky top-0 z-50'>
       {/* Barra superior de promoción */}
       <div className='bg-gradient-to-r from-[#d4a574] to-[#c97a97] text-white text-center py-2 px-4'>
@@ -94,12 +98,17 @@ export default function Header() {
             </button>
 
             {/* Carrito */}
-            <Link href='/carrito' className='relative p-2 hover:bg-gray-100 rounded-full transition'>
-              <ShoppingCart className='w-6 h-6 text-gray-700' />
-              <span className='absolute -top-1 -right-1 bg-gradient-to-r from-[#d4a574] to-[#c97a97] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold'>
-                0
-              </span>
-            </Link>
+            <button 
+                onClick={() => setCarritoOpen(true)}
+                className='relative p-2 hover:bg-gray-100 rounded-full transition'
+              >
+                <ShoppingCart className='w-6 h-6 text-gray-700' />
+                {cantidadItems > 0 && (
+                  <span className='absolute -top-1 -right-1 bg-gradient-to-r from-[#d4a574] to-[#c97a97] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold'>
+                    {cantidadItems}
+                  </span>
+                )}
+              </button>
 
             {/* Usuario */}
             <div className='relative'>
@@ -227,5 +236,8 @@ export default function Header() {
         )}
       </nav>
     </header>
+    {/* ✅ Carrito Sidebar */}
+    <CarritoSidebar isOpen={carritoOpen} onClose={() => setCarritoOpen(false)} />
+    </>
   );
 }

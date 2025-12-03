@@ -56,7 +56,7 @@ export default function Hero() {
           {/* Badge animado */}
           <div className='mb-6'>
             <span className='inline-block bg-gradient-to-r from-[#d4a574] to-[#c97a97] text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider animate-bounce'>
-              ✨ ¡Oferta Exclusiva Mayoristas!
+              ¡Oferta Exclusiva Mayoristas!
             </span>
           </div>
 
@@ -146,7 +146,7 @@ export default function Hero() {
             {[
               { icon: '📦', title: 'Stock Permanente', desc: '+1000 productos' },
               { icon: '🚚', title: 'Envío a Todo Perú', desc: '24-48 horas' },
-              { icon: '💰', title: 'Precios Mayoristas', desc: 'Desde 20 prendas' },
+              { icon: '💰', title: 'Precios Mayoristas', desc: 'Desde 400 prendas' },
               { icon: '🎁', title: 'Descuentos', desc: 'Por volumen' }
             ].map((item, i) => (
               <div key={i} className='bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all'>

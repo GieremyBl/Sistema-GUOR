@@ -231,9 +231,9 @@ export default function ProductoDetallePage() {
                 <input
                   type='number'
                   value={cantidad}
-                  onChange={(e) => setCantidad(Math.max(10, parseInt(e.target.value) || 10))}
+                  onChange={(e) => setCantidad(Math.max(400, parseInt(e.target.value) || 400))}
                   className='w-24 text-center border-2 border-gray-300 rounded-lg py-3 text-lg font-bold focus:border-[#d4a574] outline-none'
-                  min='10'
+                  min='400'
                   max={producto.stock}
                 />
                 <button
